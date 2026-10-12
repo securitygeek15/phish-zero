@@ -1,8 +1,8 @@
-# PHISH // ZERO
+# phish-zero
 
 **Tactical Adversarial Link Forensics — v0.2.0 (Monochrome Edition)**
 
-PHISH // ZERO is a local link-intelligence and phishing forensic engine that combines canonical character n-gram machine learning with deep topological heuristic analysis. It features a tactical, ultra-minimalist monochrome cyber-terminal interface engineered for zero-distraction link auditing.
+phish-zero is a local link-intelligence and phishing forensic engine that combines canonical character n-gram machine learning with deep topological heuristic analysis. It features a tactical, ultra-minimalist monochrome cyber-terminal interface engineered for zero-distraction link auditing.
 
 ---
 
@@ -180,7 +180,7 @@ Content-Type: application/json
 
 ## Important Security Context
 
-PHISH // ZERO operates in an isolated zero-egress mode: it evaluates lexical syntax, topological domain structures, and statistical n-gram probabilities without making outbound HTTP network requests or rendering remote untrusted code. It is designed as an adversarial triage and link forensics tool.
+phish-zero operates in an isolated zero-egress mode: it evaluates lexical syntax, topological domain structures, and statistical n-gram probabilities without making outbound HTTP network requests or rendering remote untrusted code. It is designed as an adversarial triage and link forensics tool.
 
 ---
 
