@@ -1,0 +1,238 @@
+from pathlib import Path
+import ipaddress
+import logging
+import re
+from urllib.parse import urlparse
+
+import joblib
+from flask import Flask, jsonify, render_template, request
+
+from url_features import (
+    normalize_for_model,
+    analyze_security_signals,
+    extract_registered_domain,
+)
+
+
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_PATH = BASE_DIR / "model" / "url_model.joblib"
+
+app = Flask(__name__, static_folder="static", template_folder="templates")
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
+
+logging.basicConfig(level=logging.INFO)
+app.logger.setLevel(logging.INFO)
+
+_model_bundle = None
+
+
+def load_model():
+    """Load the trained model once, on demand."""
+    global _model_bundle
+
+    if _model_bundle is None and MODEL_PATH.exists():
+        _model_bundle = joblib.load(MODEL_PATH)
+
+    return _model_bundle
+
+
+def normalize_url(value):
+    """Validate a submitted URL and return its display URL and hostname."""
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("Enter a URL or domain.")
+
+    value = value.strip()
+
+    if re.search(r"\s", value):
+        raise ValueError("URLs cannot contain spaces.")
+
+    if not re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", value):
+        value = "https://" + value
+
+    parsed = urlparse(value)
+
+    if parsed.scheme.lower() not in ("http", "https"):
+        raise ValueError("Only HTTP and HTTPS URLs are supported.")
+
+    if not parsed.hostname:
+        raise ValueError("Could not find a hostname in that URL.")
+
+    if parsed.username or parsed.password:
+        raise ValueError("Remove embedded credentials before analyzing this URL.")
+
+    try:
+        parsed.port
+    except ValueError:
+        raise ValueError("The URL contains an invalid port.")
+
+    try:
+        host = parsed.hostname.encode("idna").decode("ascii").lower()
+    except UnicodeError:
+        raise ValueError("The hostname contains invalid international characters.")
+
+    if host.endswith("."):
+        host = host[:-1]
+
+    if not host:
+        raise ValueError("Could not find a valid hostname.")
+
+    if (
+        host == "localhost"
+        or host.endswith((".localhost", ".local", ".internal", ".test"))
+    ):
+        raise ValueError("Local and internal hostnames are not supported.")
+
+    try:
+        ipaddress.ip_address(host.strip("[]"))
+    except ValueError:
+        if "." not in host:
+            raise ValueError("Enter a complete public domain, such as example.com.")
+
+    return value, host
+
+
+@app.get("/")
+def index():
+    return render_template("index.html")
+
+
+@app.get("/api/health")
+def health():
+    try:
+        bundle = load_model()
+    except Exception:
+        app.logger.exception("Unable to load the model")
+        return jsonify({
+            "status": "error",
+            "model_loaded": False,
+            "message": "Model loading failed. Check the server log.",
+        }), 500
+
+    return jsonify({
+        "status": "ok",
+        "model_loaded": bundle is not None,
+        "model_name": bundle.get("model_name") if bundle else None,
+        "message": (
+            "Model ready"
+            if bundle
+            else "No trained model found. Run train.py first."
+        ),
+    })
+
+
+@app.post("/api/analyze")
+def analyze():
+    body = request.get_json(silent=True)
+
+    if not isinstance(body, dict):
+        return jsonify({"error": "Send a JSON object containing a URL."}), 400
+
+    try:
+        raw_url, host = normalize_url(body.get("url", ""))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    try:
+        bundle = load_model()
+    except Exception:
+        app.logger.exception("Unable to load the model")
+        return jsonify({"error": "The trained model could not be loaded."}), 500
+
+    if bundle is None:
+        return jsonify({
+            "error": "The model has not been trained yet.",
+            "next_step": "Run: .\\.venv\\Scripts\\python.exe train.py",
+        }), 503
+
+    try:
+        pipeline = bundle["pipeline"]
+        model_url = normalize_for_model(raw_url)
+
+        probabilities = pipeline.predict_proba([model_url])[0]
+        classes = list(pipeline.classes_)
+
+        positive_label = bundle.get("positive_label", "phishing")
+
+        if positive_label not in classes:
+            raise ValueError(
+                f"Expected class {positive_label!r}; found {classes!r}"
+            )
+
+        phishing_index = classes.index(positive_label)
+        ml_score = float(probabilities[phishing_index])
+
+        # Deep security signal heuristics
+        security_analysis = analyze_security_signals(raw_url, host)
+        heuristic_risk = security_analysis["heuristic_risk"]
+        is_top_authority = security_analysis["is_top_authority"]
+        reg_domain = security_analysis["reg_domain"]
+        findings = security_analysis["findings"]
+
+        # Composite intelligence calibration
+        if is_top_authority and heuristic_risk < 0.35:
+            # Verified top domain with no critical brand spoofing / free host abuse
+            phishing_score = min(ml_score * 0.05, 0.015)
+            prediction = "benign"
+        elif heuristic_risk >= 0.60:
+            # Critical brand spoofing / deceptive subdomain attack
+            phishing_score = max(ml_score, 0.985)
+            prediction = "phishing"
+        elif heuristic_risk >= 0.40:
+            # High risk indicators (IP host, high-risk TLD, abused free host)
+            phishing_score = max(ml_score, 0.85)
+            prediction = "phishing"
+        else:
+            # General domain: weighted blend of ML pattern and structural indicators
+            phishing_score = 0.70 * ml_score + 0.30 * heuristic_risk
+            prediction = "phishing" if phishing_score >= 0.50 else "benign"
+
+        phishing_score = max(0.001, min(0.999, phishing_score))
+
+    except Exception:
+        app.logger.exception("Model prediction failed")
+        return jsonify({
+            "error": "Model prediction failed. Check the model bundle and training labels."
+        }), 500
+
+    parsed = urlparse(raw_url)
+
+    return jsonify({
+        "url": raw_url,
+        "hostname": host,
+        "registered_domain": reg_domain,
+        "prediction": prediction,
+        "phishing_score": round(phishing_score * 100, 1),
+        "ml_score": round(ml_score * 100, 1),
+        "heuristic_score": round(heuristic_risk * 100, 1),
+        "is_top_authority": is_top_authority,
+        "model_name": bundle.get(
+            "model_name",
+            "Normalized Canonical URL TF-IDF + Logistic Regression",
+        ),
+        "diagnostics": {
+            "protocol": parsed.scheme.upper(),
+            "port": parsed.port or (443 if parsed.scheme.lower() == "https" else 80),
+            "tld": host.split(".")[-1] if "." in host else "NONE",
+            "path": parsed.path or "/",
+            "has_query": bool(parsed.query),
+            "findings_count": len(findings),
+        },
+        "findings": findings,
+        "caveat": (
+            "Machine-learning & security signal intelligence. "
+            "A low score indicates no known phishing anomalies, but always exercise caution."
+        ),
+    })
+
+
+@app.errorhandler(413)
+def request_too_large(_error):
+    return jsonify({"error": "Request is too large."}), 413
+
+
+if __name__ == "__main__":
+    app.run(
+        debug=False,
+        host="127.0.0.1",
+        port=5000,
+    )

@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080808">
+  <meta name="description" content="PHISH//ZERO — Ultra-minimalist tactical link forensics & neural phishing intelligence engine.">
+  <title>PHISH // ZERO — Tactical Link Forensics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="theme-monochrome">
+  <div class="ambient-grid" aria-hidden="true"></div>
+  <div class="ambient-glow" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <!-- TOP TELEMETRY BAR -->
+    <header class="topbar">
+      <div class="brand-group">
+        <a class="brand-mark" href="/" aria-label="PHISH ZERO Home">
+          <span class="mark-brackets">[</span>
+          <span class="mark-core">P<span class="slash">//</span>0</span>
+          <span class="mark-brackets">]</span>
+        </a>
+        <div class="brand-text">
+          <span class="brand-title">PHISH // ZERO</span>
+          <span class="brand-subtitle">NEURAL LINK FORENSICS</span>
+        </div>
+      </div>
+
+      <div class="telemetry-bar">
+        <div class="telemetry-item">
+          <span class="telemetry-label">SYSTEM</span>
+          <span class="telemetry-value"><span class="pulse-dot"></span><span id="system-status">ENGINE READY</span></span>
+        </div>
+        <div class="telemetry-divider">/</div>
+        <div class="telemetry-item hide-mobile">
+          <span class="telemetry-label">RUNTIME</span>
+          <span class="telemetry-value">LOCAL // ZERO-EGRESS</span>
+        </div>
+        <div class="telemetry-divider hide-mobile">/</div>
+        <div class="telemetry-item hide-mobile">
+          <span class="telemetry-label">KEYBOARD</span>
+          <kbd class="kbd-pill" title="Press / to focus search">/</kbd>
+        </div>
+      </div>
+    </header>
+
+    <!-- HERO STATEMENT -->
+    <section class="hero-section">
+      <div class="hero-badge">
+        <span class="badge-index">SYSTEM 001</span>
+        <span class="badge-sep">::</span>
+        <span class="badge-text">DISSECT BEFORE ACCESS</span>
+      </div>
+      <h1 class="hero-heading">
+        ZERO-TRUST<br>
+        <span class="hero-subline">LINK FORENSICS.</span>
+      </h1>
+      <p class="hero-description">
+        Deconstruct deceptive URLs through lexical n-gram decomposition, topological entity matching, and adversarial brand homograph detection.
+      </p>
+    </section>
+
+    <!-- QUICK PRESETS / SAMPLES -->
+    <section class="presets-section" aria-label="Sample test URLs">
+      <div class="presets-header">
+        <span class="presets-label">QUICK AUDIT TARGETS:</span>
+        <span class="presets-instruction">CLICK TO AUTO-INSPECT</span>
+      </div>
+      <div class="preset-chips">
+        <button type="button" class="preset-chip" data-url="https://google.com">
+          <span class="chip-tag safe">BENIGN</span>
+          <span class="chip-url">google.com</span>
+        </button>
+        <button type="button" class="preset-chip" data-url="https://github.com/microsoft/vscode">
+          <span class="chip-tag safe">BENIGN</span>
+          <span class="chip-url">github.com/.../vscode</span>
+        </button>
+        <button type="button" class="preset-chip" data-url="http://paypal-verification-account-update.tk/login">
+          <span class="chip-tag threat">PHISH</span>
+          <span class="chip-url">paypal-verification.tk</span>
+        </button>
+        <button type="button" class="preset-chip" data-url="http://login-apple-security.com/signin">
+          <span class="chip-tag threat">SPOOF</span>
+          <span class="chip-url">login-apple-security.com</span>
+        </button>
+        <button type="button" class="preset-chip" data-url="http://192.168.1.1/admin/login.php">
+          <span class="chip-tag warn">RAW IP</span>
+          <span class="chip-url">192.168.1.1/admin</span>
+        </button>
+        <button type="button" class="preset-chip" data-url="https://service-mitld.firebaseapp.com/">
+          <span class="chip-tag threat">HOST</span>
+          <span class="chip-url">service-mitld.firebaseapp.com</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- SCANNER INPUT CONSOLE -->
+    <section class="analyzer-section">
+      <form id="scan-form" class="scan-console" novalidate>
+        <div class="console-label-row">
+          <label for="url-input" class="console-label">
+            <span class="console-cursor">&gt;</span> ENTER TARGET URL OR DOMAIN
+          </label>
+          <span class="console-shortcut">PRESS [ENTER] TO SCAN</span>
+        </div>
+
+        <div class="console-input-wrap">
+          <span class="input-prompt" aria-hidden="true">&gt;&gt;</span>
+          <input
+            id="url-input"
+            name="url"
+            type="text"
+            placeholder="e.g. https://target-destination.com/auth"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            required
+          >
+          <button type="button" id="clear-input" class="clear-btn" aria-label="Clear input field" hidden>✕</button>
+          <button id="scan-button" type="submit" class="submit-btn">
+            <span class="btn-text">AUDIT LINK</span>
+            <span class="btn-glyph" aria-hidden="true">↗</span>
+          </button>
+        </div>
+
+        <div class="console-footer">
+          <span class="console-foot-item">ENCRYPTION: LOCAL ONLY</span>
+          <span class="console-foot-item">ZERO EGRESS CALLS</span>
+          <span class="console-foot-item">CANONICAL EVALUATION</span>
+        </div>
+
+        <p id="error-message" class="error-banner" role="alert" hidden></p>
+      </form>
+    </section>
+
+    <!-- SCANNING HUD (VISIBLE DURING PROCESSING) -->
+    <div id="scan-hud" class="scan-hud" hidden aria-live="assertive">
+      <div class="hud-box">
+        <div class="hud-top">
+          <span class="hud-spinner" aria-hidden="true"></span>
+          <span class="hud-title">EXECUTING FORENSIC DECOMPOSITION</span>
+        </div>
+        <div class="hud-terminal">
+          <p id="hud-step-text" class="hud-step">&gt; PARSING URI SCHEMA AND NORMALIZING HOSTNAME...</p>
+        </div>
+        <div class="hud-bar-track">
+          <div class="hud-bar-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORENSIC REPORT RESULTS (THE WOW FACTOR) -->
+    <section id="report" class="report-section" hidden aria-live="polite">
+      <!-- REPORT TOP BAR -->
+      <div class="report-header">
+        <div class="report-meta">
+          <span class="section-tag">02 // FORENSIC REPORT</span>
+          <h2 id="verdict" class="verdict-title">ANALYSIS COMPLETE</h2>
+        </div>
+        <div class="report-actions">
+          <span id="prediction-pill" class="verdict-pill">UNKNOWN</span>
+          <button type="button" id="copy-report-btn" class="action-btn" title="Copy audit summary to clipboard">
+            <span>COPY AUDIT</span>
+            <span aria-hidden="true">📋</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TARGET URL DISPLAY BOX -->
+      <div class="target-url-panel">
+        <div class="target-label-bar">
+          <span>INSPECTED TARGET URI</span>
+          <button type="button" id="copy-url-btn" class="micro-btn" title="Copy raw URL">COPY</button>
+        </div>
+        <div class="target-url-content">
+          <code id="result-url" class="mono-code">https://example.com</code>
+        </div>
+      </div>
+
+      <!-- BRUTALIST RISK SCORE & VU METER -->
+      <div class="risk-matrix">
+        <div class="score-display">
+          <div class="score-label-wrap">
+            <span class="score-header">COMPOSITE PHISHING PROBABILITY</span>
+            <span id="risk-tier-label" class="risk-tier">EVALUATING</span>
+          </div>
+          <div class="score-numeral-row">
+            <span id="score" class="score-num">0.0</span>
+            <span class="score-denom">/ 100</span>
+          </div>
+        </div>
+
+        <!-- MECHANICAL SEGMENTED VU METER (20 BLOCKS) -->
+        <div class="vu-meter-container" aria-label="Risk Meter">
+          <div id="vu-meter" class="vu-meter">
+            <!-- 20 segmented blocks generated by script -->
+          </div>
+          <div class="vu-labels">
+            <span>00 [BENIGN]</span>
+            <span>25</span>
+            <span>50 [THRESHOLD]</span>
+            <span>75</span>
+            <span>100 [CRITICAL]</span>
+          </div>
+        </div>
+
+        <p id="score-note" class="engine-note">
+          Synthesized from canonical character n-gram TF-IDF inference combined with topological brand homograph analysis.
+        </p>
+      </div>
+
+      <!-- 4-CARD DIAGNOSTIC GRID -->
+      <div class="diagnostics-grid">
+        <div class="diag-card">
+          <span class="diag-kicker">DESTINATION HOST</span>
+          <strong id="diag-host" class="diag-val">—</strong>
+          <span id="diag-reg" class="diag-sub">ROOT: —</span>
+        </div>
+        <div class="diag-card">
+          <span class="diag-kicker">TRANSPORT &amp; PORT</span>
+          <strong id="diag-proto" class="diag-val">HTTPS</strong>
+          <span id="diag-port" class="diag-sub">PORT: 443</span>
+        </div>
+        <div class="diag-card">
+          <span class="diag-kicker">NEURAL ESTIMATE</span>
+          <strong id="diag-ml" class="diag-val">—%</strong>
+          <span id="diag-heur" class="diag-sub">HEURISTIC FACTOR: —%</span>
+        </div>
+        <div class="diag-card">
+          <span class="diag-kicker">OBSERVED SIGNALS</span>
+          <strong id="diag-signals-count" class="diag-val">0</strong>
+          <span id="diag-auth" class="diag-sub">AUTHORITY: VERIFIED</span>
+        </div>
+      </div>
+
+      <!-- FORENSIC EVIDENCE FEED -->
+      <div class="evidence-ledger">
+        <div class="ledger-header">
+          <div>
+            <span class="section-tag">03 // EVIDENCE LEDGER</span>
+            <h3 class="ledger-title">Observed Signals &amp; Heuristics</h3>
+          </div>
+          <span id="finding-count" class="micro-badge">0 SIGNALS DETECTED</span>
+        </div>
+        <ul id="finding-list" class="evidence-list">
+          <!-- Populated by JavaScript -->
+        </ul>
+      </div>
+
+      <!-- RAW JSON TELEMETRY DRAWER TOGGLE -->
+      <div class="raw-telemetry-toggle-wrap">
+        <button type="button" id="toggle-json-btn" class="outline-btn">
+          <span class="btn-bracket">[</span>
+          <span id="toggle-json-text">VIEW RAW TELEMETRY JSON</span>
+          <span class="btn-bracket">]</span>
+        </button>
+      </div>
+
+      <div id="raw-json-panel" class="raw-json-panel" hidden>
+        <div class="json-header">
+          <span>SERVER RESPONSE TELEMETRY</span>
+          <button type="button" id="copy-json-btn" class="micro-btn">COPY JSON</button>
+        </div>
+        <pre><code id="json-viewer" class="json-code"></code></pre>
+      </div>
+
+      <!-- SECURITY CAVEAT -->
+      <div class="caveat-banner">
+        <span class="caveat-glyph">⚠</span>
+        <p id="caveat" class="caveat-text">
+          Zero-trust principle: ML estimation is an adversarial heuristic, not a guarantee. Inspect domain origin before submitting credentials.
+        </p>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <span class="footer-brand">PHISH // ZERO</span>
+        <span class="footer-sub">TACTICAL ADVERSARIAL LINK FORENSICS</span>
+      </div>
+      <div class="footer-right">
+        <span>MONOCHROME ED.</span>
+        <span class="footer-sep">/</span>
+        <span>STANDALONE FLASK CORE</span>
+        <span class="footer-sep">/</span>
+        <span>V0.2.0</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden>
+    <span class="toast-indicator">■</span>
+    <span id="toast-message" class="toast-message">COPIED TO CLIPBOARD</span>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
