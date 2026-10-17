@@ -72,28 +72,28 @@
       </div>
       <div class="preset-chips">
         <button type="button" class="preset-chip" data-url="https://google.com">
-          <span class="chip-tag safe">BENIGN</span>
+          <span class="chip-tag safe">SAFE</span>
           <span class="chip-url">google.com</span>
         </button>
-        <button type="button" class="preset-chip" data-url="https://github.com/microsoft/vscode">
-          <span class="chip-tag safe">BENIGN</span>
-          <span class="chip-url">github.com/.../vscode</span>
-        </button>
-        <button type="button" class="preset-chip" data-url="http://paypal-verification-account-update.tk/login">
-          <span class="chip-tag threat">PHISH</span>
-          <span class="chip-url">paypal-verification.tk</span>
-        </button>
-        <button type="button" class="preset-chip" data-url="http://login-apple-security.com/signin">
-          <span class="chip-tag threat">SPOOF</span>
-          <span class="chip-url">login-apple-security.com</span>
+        <button type="button" class="preset-chip" data-url="https://news.ycombinator.com">
+          <span class="chip-tag caution">POTENTIAL SAFE</span>
+          <span class="chip-url">news.ycombinator.com</span>
         </button>
         <button type="button" class="preset-chip" data-url="http://192.168.1.1/admin/login.php">
-          <span class="chip-tag warn">RAW IP</span>
+          <span class="chip-tag warn">POTENTIAL DANGER</span>
           <span class="chip-url">192.168.1.1/admin</span>
         </button>
         <button type="button" class="preset-chip" data-url="https://service-mitld.firebaseapp.com/">
-          <span class="chip-tag threat">HOST</span>
+          <span class="chip-tag warn">POTENTIAL DANGER</span>
           <span class="chip-url">service-mitld.firebaseapp.com</span>
+        </button>
+        <button type="button" class="preset-chip" data-url="http://paypal-verification-account-update.tk/login">
+          <span class="chip-tag threat">DANGEROUS</span>
+          <span class="chip-url">paypal-verification.tk</span>
+        </button>
+        <button type="button" class="preset-chip" data-url="http://login-apple-security.com/signin">
+          <span class="chip-tag threat">DANGEROUS</span>
+          <span class="chip-url">login-apple-security.com</span>
         </button>
       </div>
     </section>
@@ -171,14 +171,60 @@
         </div>
       </div>
 
-      <!-- TARGET URL DISPLAY BOX -->
+      <!-- INTERACTIVE URL DISSECTOR -->
       <div class="target-url-panel">
         <div class="target-label-bar">
-          <span>INSPECTED TARGET URI</span>
-          <button type="button" id="copy-url-btn" class="micro-btn" title="Copy raw URL">COPY</button>
+          <div class="panel-title-group">
+            <span class="section-tag-inline">02 // DISSECTOR</span>
+            <span class="panel-heading">INTERACTIVE URL DECONSTRUCTOR</span>
+          </div>
+          <div class="dissector-controls">
+            <span class="micro-hint">CLICK ANY SEGMENT TO INSPECT FORENSIC WEIGHT</span>
+            <button type="button" id="copy-url-btn" class="micro-btn" title="Copy raw URL">COPY FULL URI</button>
+          </div>
         </div>
+
+        <!-- Raw URL string -->
         <div class="target-url-content">
           <code id="result-url" class="mono-code">https://example.com</code>
+        </div>
+
+        <!-- Token Chain -->
+        <div class="dissector-chain-wrap">
+          <div class="chain-legend">
+            <span>DECOMPOSED URI TOKENS:</span>
+            <span class="legend-hint">CLICK TOKEN FOR DEEP FORENSIC METRICS</span>
+          </div>
+          <div id="dissector-chain" class="dissector-chain" role="tablist" aria-label="URL Segments">
+            <!-- Dynamically populated by app.js -->
+          </div>
+        </div>
+
+        <!-- Selected Token Inspector Drawer -->
+        <div id="token-inspector" class="token-inspector">
+          <div class="inspector-top">
+            <div class="inspector-title-row">
+              <span id="inspector-type" class="inspector-badge">SCHEME</span>
+              <strong id="inspector-val" class="inspector-val">https://</strong>
+              <span id="inspector-severity" class="severity-pill clean">CLEAN</span>
+            </div>
+            <button type="button" id="copy-token-btn" class="micro-btn" title="Copy selected token">COPY SEGMENT</button>
+          </div>
+          <p id="inspector-desc" class="inspector-desc">Encrypted TLS transport layer.</p>
+          <div class="inspector-metrics">
+            <div class="metric-pill">
+              <span class="metric-lbl">LENGTH:</span>
+              <span id="inspector-len" class="metric-val">8 chars</span>
+            </div>
+            <div class="metric-pill">
+              <span class="metric-lbl">SHANNON ENTROPY:</span>
+              <span id="inspector-entropy" class="metric-val">1.92</span>
+            </div>
+            <div class="metric-pill">
+              <span class="metric-lbl">SECURITY TAG:</span>
+              <span id="inspector-tag" class="metric-val">TLS-ENCRYPTED</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -238,11 +284,66 @@
         </div>
       </div>
 
+      <!-- GRAPH ANALYZER & TOPOLOGY ROUTING -->
+      <div class="graph-analyzer-section">
+        <div class="graph-header">
+          <div>
+            <span class="section-tag">03 // GRAPH ANALYZER</span>
+            <h3 class="graph-title">Visual Threat Surface &amp; Route Topology</h3>
+          </div>
+          <div class="graph-tabs" role="tablist" aria-label="Graph Analysis Views">
+            <button type="button" class="graph-tab active" data-view="radar" id="tab-radar">
+              <span>◈ RISK SURFACE RADAR</span>
+            </button>
+            <button type="button" class="graph-tab" data-view="topology" id="tab-topology">
+              <span>☍ TOPOLOGY ROUTE FLOW</span>
+            </button>
+            <button type="button" class="graph-tab" data-view="dual" id="tab-dual">
+              <span>▤ DUAL VIEW</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="graph-viewport">
+          <!-- RADAR VIEW -->
+          <div id="radar-container" class="graph-view-panel active">
+            <div class="radar-layout">
+              <div class="radar-svg-wrap">
+                <svg id="radar-svg" class="radar-svg" viewBox="0 0 460 380" aria-label="Risk Radar Chart">
+                  <!-- Generated dynamically by app.js -->
+                </svg>
+              </div>
+              <div class="vector-cards-grid" id="vector-cards-grid">
+                <!-- 6 metric breakdown cards generated dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- TOPOLOGY VIEW -->
+          <div id="topology-container" class="graph-view-panel">
+            <div class="topology-layout">
+              <div class="topology-svg-wrap">
+                <svg id="topology-svg" class="topology-svg" viewBox="0 0 840 220" aria-label="Link Route Topology Chart">
+                  <!-- Generated dynamically by app.js -->
+                </svg>
+              </div>
+              <div class="route-verdict-box" id="route-verdict-box">
+                <div class="verdict-box-header">
+                  <span class="verdict-icon">☍</span>
+                  <span class="verdict-box-title">TOPOLOGICAL ROUTE VERDICT</span>
+                </div>
+                <p id="route-summary-text" class="verdict-box-desc">Evaluating link route...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- FORENSIC EVIDENCE FEED -->
       <div class="evidence-ledger">
         <div class="ledger-header">
           <div>
-            <span class="section-tag">03 // EVIDENCE LEDGER</span>
+            <span class="section-tag">04 // EVIDENCE LEDGER</span>
             <h3 class="ledger-title">Observed Signals &amp; Heuristics</h3>
           </div>
           <span id="finding-count" class="micro-badge">0 SIGNALS DETECTED</span>

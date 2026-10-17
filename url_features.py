@@ -1,5 +1,7 @@
 from urllib.parse import urlsplit, urlunsplit
+from collections import Counter
 import ipaddress
+import math
 import re
 
 # Well-known established global authority domains
@@ -257,3 +259,386 @@ def analyze_security_signals(raw_url: str, host: str) -> dict:
         "is_top_authority": is_top_authority,
         "reg_domain": reg_domain,
     }
+
+
+def calculate_entropy(text: str) -> float:
+    """Calculate Shannon entropy for a given text string."""
+    if not text or len(text) <= 1:
+        return 0.0
+    counts = Counter(text)
+    length = len(text)
+    ent = -sum((c / length) * math.log2(c / length) for c in counts.values())
+    return round(max(0.0, ent), 2)
+
+
+def dissect_url(raw_url: str, host: str, security_analysis: dict) -> list:
+    """Decompose a URL into semantic, risk-scored interactive tokens."""
+    parsed = urlsplit(raw_url)
+    reg_domain = security_analysis.get("reg_domain", host)
+    is_top_authority = security_analysis.get("is_top_authority", False)
+
+    tokens = []
+
+    # 1. Scheme
+    scheme = parsed.scheme.lower() if parsed.scheme else "http"
+    tokens.append({
+        "type": "scheme",
+        "label": "SCHEME",
+        "value": f"{scheme}://",
+        "raw": scheme,
+        "severity": "clean" if scheme == "https" else "medium",
+        "entropy": calculate_entropy(scheme),
+        "length": len(scheme),
+        "explanation": "Encrypted TLS transport layer." if scheme == "https" else "Unencrypted plain-text HTTP transport. Vulnerable to interception.",
+        "tag": "TLS-ENCRYPTED" if scheme == "https" else "NO-ENCRYPTION"
+    })
+
+    # 2. Host segments: Subdomain vs Apex vs TLD
+    host_clean = host.lower().strip(".")
+    if host_clean.startswith("www."):
+        host_clean = host_clean[4:]
+
+    subdomain = ""
+    if reg_domain in host_clean and len(host_clean) > len(reg_domain):
+        subdomain = host_clean[:-(len(reg_domain) + 1)]
+
+    reg_parts = reg_domain.split(".")
+    if len(reg_parts) >= 2:
+        if len(reg_parts) >= 3 and reg_parts[-2] in ("co", "com", "org", "net", "edu", "gov", "ac") and len(reg_parts[-1]) <= 3:
+            tld = ".".join(reg_parts[-2:])
+            apex_name = ".".join(reg_parts[:-2])
+        else:
+            tld = reg_parts[-1]
+            apex_name = ".".join(reg_parts[:-1])
+    else:
+        apex_name = reg_domain
+        tld = ""
+
+    # Subdomain token
+    if subdomain:
+        sub_sev = "clean"
+        sub_tag = "SUBDOMAIN"
+        sub_exp = f"Subdomain prefix '{subdomain}' routes to primary host."
+        for brand, official in BRAND_MAP.items():
+            if brand in subdomain.lower() and reg_domain != official:
+                sub_sev = "critical"
+                sub_tag = "DECEPTIVE-BRAND"
+                sub_exp = f"Deceptive subdomain trick: embeds brand '{brand}' before actual destination '{reg_domain}'."
+                break
+        tokens.append({
+            "type": "subdomain",
+            "label": "SUBDOMAIN",
+            "value": f"{subdomain}.",
+            "raw": subdomain,
+            "severity": sub_sev,
+            "entropy": calculate_entropy(subdomain),
+            "length": len(subdomain),
+            "explanation": sub_exp,
+            "tag": sub_tag
+        })
+
+    # Apex Domain Name
+    apex_sev = "clean" if is_top_authority else "info"
+    apex_tag = "APEX-HOST"
+    apex_exp = f"Registered apex destination domain '{reg_domain}'."
+    for brand, official in BRAND_MAP.items():
+        if brand in apex_name.lower():
+            if reg_domain != official:
+                apex_sev = "critical"
+                apex_tag = "BRAND-SPOOF"
+                apex_exp = f"Brand impersonation alert: mentions '{brand}' but root registry is '{reg_domain}', not authentic '{official}'."
+                break
+    if apex_name.count("-") >= 3:
+        if apex_sev != "critical":
+            apex_sev = "medium"
+            apex_tag = "HYPHEN-STUFFING"
+            apex_exp = f"Unusual hyphen density ({apex_name.count('-')} hyphens) in domain name."
+
+    tokens.append({
+        "type": "domain",
+        "label": "APEX DOMAIN",
+        "value": apex_name,
+        "raw": apex_name,
+        "severity": apex_sev,
+        "entropy": calculate_entropy(apex_name),
+        "length": len(apex_name),
+        "explanation": apex_exp,
+        "tag": apex_tag
+    })
+
+    # TLD
+    if tld:
+        tld_sev = "high" if tld in SUSPICIOUS_TLDS else "clean"
+        tld_tag = "HIGH-RISK-TLD" if tld in SUSPICIOUS_TLDS else "STANDARD-TLD"
+        tld_exp = f"High-risk TLD (.{tld}): statistically associated with burner phishing campaigns." if tld in SUSPICIOUS_TLDS else f"Standard top-level domain zone (.{tld})."
+        tokens.append({
+            "type": "tld",
+            "label": "TLD",
+            "value": f".{tld}",
+            "raw": tld,
+            "severity": tld_sev,
+            "entropy": calculate_entropy(tld),
+            "length": len(tld) + 1,
+            "explanation": tld_exp,
+            "tag": tld_tag
+        })
+
+    # Port (if non-standard)
+    if parsed.port and not ((scheme == "https" and parsed.port == 443) or (scheme == "http" and parsed.port == 80)):
+        tokens.append({
+            "type": "port",
+            "label": "PORT",
+            "value": f":{parsed.port}",
+            "raw": str(parsed.port),
+            "severity": "medium",
+            "entropy": calculate_entropy(str(parsed.port)),
+            "length": len(str(parsed.port)) + 1,
+            "explanation": f"Non-standard destination port {parsed.port}. May bypass security gateways or run ad-hoc services.",
+            "tag": "NON-STANDARD-PORT"
+        })
+
+    # Path
+    path_str = parsed.path or "/"
+    path_sev = "clean"
+    path_tag = "ENDPOINT"
+    path_exp = f"Resource path endpoint '{path_str}'."
+    sensitive_kw = [kw for kw in ["login", "signin", "verify", "verification", "account", "banking", "security", "update", "recover", "wallet", "confirm", "credential", "password"] if kw in path_str.lower()]
+    if sensitive_kw:
+        if not is_top_authority or apex_sev == "critical":
+            path_sev = "high"
+            path_tag = "CREDENTIAL-TARGET"
+            path_exp = f"Endpoint targets authentication credentials: {', '.join(sensitive_kw)}."
+        else:
+            path_sev = "info"
+            path_tag = "AUTH-PATH"
+            path_exp = f"Authentic platform authentication path: {', '.join(sensitive_kw)}."
+
+    tokens.append({
+        "type": "path",
+        "label": "PATH",
+        "value": path_str,
+        "raw": path_str,
+        "severity": path_sev,
+        "entropy": calculate_entropy(path_str),
+        "length": len(path_str),
+        "explanation": path_exp,
+        "tag": path_tag
+    })
+
+    # Query
+    if parsed.query:
+        q_str = f"?{parsed.query}"
+        q_sev = "clean"
+        q_tag = "QUERY-PARAMS"
+        q_exp = f"Query parameters payload ({len(parsed.query)} chars)."
+        if any(kw in parsed.query.lower() for kw in ["login", "token", "auth", "session", "user", "pwd"]):
+            q_sev = "medium" if not is_top_authority else "info"
+            q_tag = "SENSITIVE-QUERY"
+            q_exp = "Query parameters contain authentication or session identifier variables."
+        tokens.append({
+            "type": "query",
+            "label": "QUERY",
+            "value": q_str,
+            "raw": parsed.query,
+            "severity": q_sev,
+            "entropy": calculate_entropy(parsed.query),
+            "length": len(q_str),
+            "explanation": q_exp,
+            "tag": q_tag
+        })
+
+    return tokens
+
+
+def compute_graph_data(raw_url: str, host: str, security_analysis: dict, ml_score: float) -> dict:
+    """Generate risk surface vectors and topological routing graph data."""
+    parsed = urlsplit(raw_url)
+    reg_domain = security_analysis.get("reg_domain", host)
+    is_top_authority = security_analysis.get("is_top_authority", False)
+
+    # 1. Lexical Anomaly (0-100)
+    ent_netloc = calculate_entropy(parsed.netloc)
+    length_penalty = min(30.0, max(0.0, (len(raw_url) - 50) * 0.4))
+    lexical_score = min(100.0, round(ml_score * 0.6 + length_penalty + (ent_netloc * 7.0), 1))
+    if is_top_authority:
+        lexical_score = min(lexical_score * 0.2, 12.0)
+
+    # 2. Structural Deception (0-100)
+    hyphen_count = host.count("-")
+    dot_count = host.count(".")
+    struct_score = 0.0
+    if hyphen_count >= 3:
+        struct_score += 40.0
+    elif hyphen_count >= 1:
+        struct_score += 15.0
+    if dot_count >= 4:
+        struct_score += 35.0
+    elif dot_count >= 3:
+        struct_score += 15.0
+    if parsed.port and not ((parsed.scheme == "https" and parsed.port == 443) or (parsed.scheme == "http" and parsed.port == 80)):
+        struct_score += 25.0
+    try:
+        ipaddress.ip_address(host.strip("[]"))
+        struct_score += 65.0
+    except ValueError:
+        pass
+    if is_top_authority:
+        struct_score = 5.0
+    struct_score = min(100.0, round(struct_score, 1))
+
+    # 3. Brand Impersonation (0-100)
+    brand_score = 0.0
+    detected_brand = None
+    for brand, official in BRAND_MAP.items():
+        if brand in host.lower():
+            if reg_domain != official and not host.endswith("." + official):
+                brand_score = 100.0
+                detected_brand = brand
+                break
+            else:
+                brand_score = 0.0
+                detected_brand = brand
+
+    # 4. TLD Reputation (0-100)
+    tld = host.split(".")[-1].lower() if "." in host else ""
+    tld_score = 0.0
+    if tld in SUSPICIOUS_TLDS:
+        tld_score = 95.0
+    elif any(reg_domain == fh or host.endswith("." + fh) for fh in FREE_HOSTS):
+        tld_score = 85.0
+    elif is_top_authority:
+        tld_score = 0.0
+    else:
+        tld_score = 10.0
+
+    # 5. Transport Security (0-100)
+    transport_score = 85.0 if parsed.scheme.lower() == "http" else 5.0
+
+    # 6. Credential Intent (0-100)
+    sensitive_kw = [kw for kw in ["login", "signin", "verify", "verification", "account", "banking", "security", "update", "recover", "wallet", "confirm", "credential", "password"] if kw in (parsed.path.lower() + " " + parsed.query.lower())]
+    if sensitive_kw:
+        if is_top_authority and brand_score == 0:
+            intent_score = 15.0
+        else:
+            intent_score = 95.0
+    else:
+        intent_score = 5.0
+
+    risk_vectors = [
+        {
+            "id": "lexical",
+            "name": "Lexical Entropy",
+            "score": lexical_score,
+            "status": "critical" if lexical_score >= 70 else ("warning" if lexical_score >= 35 else "clean"),
+            "desc": f"N-gram randomness score {lexical_score}% (entropy: {ent_netloc})."
+        },
+        {
+            "id": "structure",
+            "name": "Host Deception",
+            "score": struct_score,
+            "status": "critical" if struct_score >= 70 else ("warning" if struct_score >= 35 else "clean"),
+            "desc": f"Subdomain & hyphen density score {struct_score}%."
+        },
+        {
+            "id": "brand",
+            "name": "Brand Spoofing",
+            "score": brand_score,
+            "status": "critical" if brand_score >= 70 else ("clean" if brand_score == 0 else "warning"),
+            "desc": f"Target impersonation hazard: {detected_brand.upper() if detected_brand else 'NONE'}."
+        },
+        {
+            "id": "tld",
+            "name": "TLD Risk",
+            "score": tld_score,
+            "status": "critical" if tld_score >= 70 else ("warning" if tld_score >= 40 else "clean"),
+            "desc": f"TLD registry .{tld} reputation score {tld_score}%."
+        },
+        {
+            "id": "transport",
+            "name": "Transport Risk",
+            "score": transport_score,
+            "status": "critical" if transport_score >= 70 else "clean",
+            "desc": f"Scheme {parsed.scheme.upper()} encryption score {transport_score}%."
+        },
+        {
+            "id": "intent",
+            "name": "Credential Intent",
+            "score": intent_score,
+            "status": "critical" if intent_score >= 70 else ("warning" if intent_score >= 35 else "clean"),
+            "desc": f"Credential targeting keywords: {', '.join(sensitive_kw) if sensitive_kw else 'NONE'}."
+        }
+    ]
+
+    # Topological Route Graph
+    nodes = []
+    # Node 1: Client
+    nodes.append({
+        "id": "node_client",
+        "step": "01",
+        "label": "VISITOR",
+        "sub": "ORIGIN BROWSER",
+        "status": "neutral"
+    })
+    # Node 2: Gateway
+    nodes.append({
+        "id": "node_gate",
+        "step": "02",
+        "label": f"{parsed.scheme.upper()}",
+        "sub": "TLS GATEWAY" if parsed.scheme == "https" else "UNENCRYPTED",
+        "status": "clean" if parsed.scheme == "https" else "warning"
+    })
+    # Node 3: If Brand lure
+    is_diverted = False
+    if detected_brand and brand_score >= 70:
+        is_diverted = True
+        nodes.append({
+            "id": "node_lure",
+            "step": "LURE",
+            "label": detected_brand.upper(),
+            "sub": "PERCEIVED BRAND",
+            "status": "critical",
+            "is_lure": True
+        })
+    # Node 4: Actual Registered Host
+    nodes.append({
+        "id": "node_dest",
+        "step": "03" if not is_diverted else "ACTUAL",
+        "label": reg_domain,
+        "sub": "TRUE REGISTRY HOST",
+        "status": "critical" if is_diverted or struct_score >= 60 else ("clean" if is_top_authority else "neutral")
+    })
+    # Node 5: TLD Zone
+    nodes.append({
+        "id": "node_tld",
+        "step": "04",
+        "label": f".{tld.upper()}",
+        "sub": "TLD AUTHORITY",
+        "status": "critical" if tld in SUSPICIOUS_TLDS else "clean"
+    })
+    # Node 6: Endpoint
+    path_clean = parsed.path or "/"
+    nodes.append({
+        "id": "node_endpoint",
+        "step": "05",
+        "label": (path_clean[:18] + "..") if len(path_clean) > 18 else path_clean,
+        "sub": "TARGET ENDPOINT",
+        "status": "warning" if sensitive_kw else "clean"
+    })
+
+    if is_diverted:
+        route_summary = f"Deceptive Routing Detected: The link displays '{detected_brand}' to impersonate an authentic service, but traffic diverts to '{reg_domain}' on .{tld}."
+    elif is_top_authority:
+        route_summary = f"Verified Authority Route: Traffic terminates directly at official domain '{reg_domain}' over {parsed.scheme.upper()}."
+    else:
+        route_summary = f"Standard Route: Link directs to '{reg_domain}' via {parsed.scheme.upper()} without brand collision."
+
+    return {
+        "risk_vectors": risk_vectors,
+        "route_topology": {
+            "nodes": nodes,
+            "is_diverted": is_diverted,
+            "detected_brand": detected_brand,
+            "summary": route_summary
+        }
+    }
+

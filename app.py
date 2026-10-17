@@ -11,7 +11,11 @@ from url_features import (
     normalize_for_model,
     analyze_security_signals,
     extract_registered_domain,
+    dissect_url,
+    compute_graph_data,
+    BRAND_MAP,
 )
+
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -168,23 +172,54 @@ def analyze():
         reg_domain = security_analysis["reg_domain"]
         findings = security_analysis["findings"]
 
-        # Composite intelligence calibration
+        # Check for confirmed brand impersonation, IP destination, or critical findings
+        has_critical = any(f.get("severity") == "critical" for f in findings)
+        brand_spoofed = any(
+            brand in host.lower() and reg_domain != official and not host.endswith("." + official)
+            for brand, official in BRAND_MAP.items()
+        )
+        is_ip = False
+        try:
+            ipaddress.ip_address(host.strip("[]"))
+            is_ip = True
+        except ValueError:
+            pass
+
+        # 4-Tier Security Channel Calibration:
+        # - Danger (Red): Confirmed brand impersonation, spoofed subdomains, critical hazards
+        # - Warning (Yellow): Potentially dangerous (raw numerical IPs, free hosts, unencrypted logins, elevated risk)
+        # - Caution (Blue): Potentially safe (general unverified domains, community sites with clean/minor signals)
+        # - Safe (Green): Verified top authority domains and pristine zero-threat targets
         if is_top_authority and heuristic_risk < 0.35:
-            # Verified top domain with no critical brand spoofing / free host abuse
             phishing_score = min(ml_score * 0.05, 0.015)
+            threat_level = "safe"
+            threat_label = "SAFE // VERIFIED"
+            threat_color = "#10b981"
             prediction = "benign"
-        elif heuristic_risk >= 0.60:
-            # Critical brand spoofing / deceptive subdomain attack
+        elif brand_spoofed or (has_critical and not is_ip) or (heuristic_risk >= 0.75 and not is_ip):
             phishing_score = max(ml_score, 0.985)
+            threat_level = "danger"
+            threat_label = "DANGEROUS // THREAT CONFIRMED"
+            threat_color = "#ef4444"
             prediction = "phishing"
-        elif heuristic_risk >= 0.40:
-            # High risk indicators (IP host, high-risk TLD, abused free host)
-            phishing_score = max(ml_score, 0.85)
-            prediction = "phishing"
+        elif is_ip or heuristic_risk >= 0.35 or (ml_score >= 0.60 and not is_top_authority):
+            phishing_score = max(0.48, min(0.68, 0.45 + heuristic_risk * 0.20 + ml_score * 0.10))
+            threat_level = "warning"
+            threat_label = "POTENTIALLY DANGEROUS"
+            threat_color = "#f59e0b"
+            prediction = "phishing" if phishing_score >= 0.50 else "suspicious"
+        elif not is_top_authority or ml_score >= 0.12 or heuristic_risk >= 0.10:
+            phishing_score = max(0.16, min(0.38, 0.15 + ml_score * 0.25 + heuristic_risk * 0.15))
+            threat_level = "caution"
+            threat_label = "POTENTIALLY SAFE"
+            threat_color = "#3b82f6"
+            prediction = "benign"
         else:
-            # General domain: weighted blend of ML pattern and structural indicators
-            phishing_score = 0.70 * ml_score + 0.30 * heuristic_risk
-            prediction = "phishing" if phishing_score >= 0.50 else "benign"
+            phishing_score = max(0.005, min(0.10, ml_score * 0.20))
+            threat_level = "safe"
+            threat_label = "SAFE // VERIFIED"
+            threat_color = "#10b981"
+            prediction = "benign"
 
         phishing_score = max(0.001, min(0.999, phishing_score))
 
@@ -195,12 +230,17 @@ def analyze():
         }), 500
 
     parsed = urlparse(raw_url)
+    dissection = dissect_url(raw_url, host, security_analysis)
+    graph_data = compute_graph_data(raw_url, host, security_analysis, ml_score * 100)
 
     return jsonify({
         "url": raw_url,
         "hostname": host,
         "registered_domain": reg_domain,
         "prediction": prediction,
+        "threat_level": threat_level,
+        "threat_label": threat_label,
+        "threat_color": threat_color,
         "phishing_score": round(phishing_score * 100, 1),
         "ml_score": round(ml_score * 100, 1),
         "heuristic_score": round(heuristic_risk * 100, 1),
@@ -217,6 +257,8 @@ def analyze():
             "has_query": bool(parsed.query),
             "findings_count": len(findings),
         },
+        "dissection": dissection,
+        "graph_data": graph_data,
         "findings": findings,
         "caveat": (
             "Machine-learning & security signal intelligence. "
