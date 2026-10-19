@@ -1,41 +1,58 @@
 # phish-zero
 
-**Tactical Adversarial Link Forensics — v0.2.0 (Monochrome Edition)**
+**Tactical Adversarial Link Forensics & Neural Threat Intelligence — v0.3.0**
 
-phish-zero is a local link-intelligence and phishing forensic engine that combines canonical character n-gram machine learning with deep topological heuristic analysis. It features a tactical, ultra-minimalist monochrome cyber-terminal interface engineered for zero-distraction link auditing.
+`phish-zero` is a local link-intelligence and phishing forensic engine that combines canonical character n-gram machine learning with deep topological heuristic analysis. It features an interactive URL dissector, a visual threat surface radar chart, an end-to-end route topology analyzer, and a 4-tier security color-coded forensic interface engineered for rapid, zero-egress link auditing.
 
 ---
 
-## Capabilities & Architecture
+## Key Features & Architecture
 
-- **Canonical URL Normalization ([url_features.py](file:///c:/Users/amaan/Desktop/phish-zero/url_features.py))**: Eliminates spurious dataset shortcuts by canonicalizing schemes, standardizing ports, and stripping artificial `www.` bias so `domain.com` and `www.domain.com` evaluate identically.
-- **Neural Pipeline ([train.py](file:///c:/Users/amaan/Desktop/phish-zero/train.py))**: Sublinear character n-gram TF-IDF vectorizer + balanced Logistic Regression trained on 220,000+ domain-grouped samples with benign path augmentation.
-- **Deep Forensic Signal Analyzer**:
-  - **Brand Impersonation & Typosquatting**: Detects target brand spoofing (PayPal, Apple, Google, Microsoft, Netflix, Chase, Bank of America, Amazon, etc.) when embedded in deceptive hostnames.
-  - **High-Risk Disposable TLDs**: Flags top-level domains statistically overrepresented in mass phishing (`.tk`, `.ml`, `.ga`, `.cf`, `.gq`, `.top`, `.xyz`, `.buzz`, `.cam`, etc.).
-  - **Free App Host & Tunnel Abuse**: Identifies phishing forms hosted on disposable public app services (`firebaseapp.com`, `weeblysite.com`, `repl.co`, `ngrok.io`, `pages.dev`, etc.).
-  - **Raw IP & Punycode Homographs**: Identifies raw IP address destinations and internationalized Punycode lookalikes (`xn--`).
-  - **Credential Harvesting Indicators**: Detects sensitive authentication and security target keywords in paths and query strings.
-  - **Verified Authority Baseline**: Validates established global authority domains (`google.com`, `github.com`, `wikipedia.org`, etc.) to prevent false alarms on authentic sites.
-- **Calibrated Composite Scoring ([app.py](file:///c:/Users/amaan/Desktop/phish-zero/app.py))**: Synthesizes neural pattern confidence with observable forensic heuristics into a transparent 0–100 risk score.
-- **Tactical Monochrome UI ([templates/index.html](file:///c:/Users/amaan/Desktop/phish-zero/templates/index.html), [static/style.css](file:///c:/Users/amaan/Desktop/phish-zero/static/style.css), [static/app.js](file:///c:/Users/amaan/Desktop/phish-zero/static/app.js))**:
-  - Pure black canvas with ambient technical coordinate grid and subtle radial illumination.
-  - Typography pairing **Space Grotesk** (display), **Inter** (body), and **JetBrains Mono** (telemetry).
-  - Live system telemetry ticker with latency ping and engine heartbeat.
-  - Quick-audit preset chips for instant 1-click testing (`google.com`, `github.com`, `paypal-verification.tk`, `login-apple-security.com`, `192.168.1.1/admin`).
-  - Animated live scanning HUD displaying sequential forensic decomposition steps.
-  - Oversized brutalist risk numeral (`0.0` to `100.0`) with count-up animation.
-  - Mechanical 20-segment VU meter that illuminates smoothly with threat severity.
-  - 4-card forensic telemetry grid: Destination Host, Transport & Port, Neural Estimate, and Observed Signals.
-  - Granular evidence ledger with severity badges (`[CRITICAL]`, `[HIGH]`, `[MEDIUM]`, `[CLEAN]`).
-  - One-click clipboard utilities: **Copy Target URL**, **Copy Markdown Audit Report**, and **View/Copy Raw Telemetry JSON**.
-  - Keyboard shortcuts (`/` to focus search, `Esc` to clear).
+### 1. Interactive URL Dissector ([url_features.py](file:///c:/Users/amaan/Desktop/phish-zero/url_features.py))
+- **Granular Tokenization**: Decomposes any destination URI into syntactic segments: **Scheme**, **Subdomain**, **Apex Domain**, **TLD**, **Port**, **Path**, and **Query**.
+- **Shannon Entropy Analysis**: Computes character entropy for each individual token to identify algorithmically generated randomness, DGA domains, or obfuscated hex strings.
+- **Deep Token Inspector**: Clickable segment tabs displaying length, entropy, security tag (`TLS-ENCRYPTED`, `DECEPTIVE-BRAND`, `BRAND-SPOOF`, `HIGH-RISK-TLD`, etc.), and plain-English forensic explanations with 1-click token copying.
+
+### 2. Visual Threat Graph Analyzer
+- **6-Axis Risk Surface Radar**: Interactive SVG radar chart projecting risk vectors across:
+  - **Lexical Entropy**: N-gram randomness and length penalties
+  - **Host Deception**: Subdomain nesting, hyphen density, and numerical IP patterns
+  - **Brand Spoofing**: Target brand impersonation collision score
+  - **TLD Reputation**: Burner TLD vs. legitimate registry trust
+  - **Transport Security**: TLS encryption status
+  - **Credential Intent**: Authentication and sensitive credential-harvesting keyword density
+- **Topology Route Flow**: Interactive graph tracing the visitor's logical hop sequence:
+  `Visitor` $\rightarrow$ `Transport Gateway` $\rightarrow$ `[LURE (Perceived Brand)]` $\rightarrow$ `True Registry Host` $\rightarrow$ `TLD Authority` $\rightarrow$ `Endpoint`.
+- **View Switcher**: Seamlessly toggle between **Risk Surface Radar**, **Topology Route Flow**, and **Dual View**.
+
+### 3. 4-Tier Security Color Channels
+The interface dynamically morphs its aesthetic and telemetry based on the evaluated threat level:
+- 🔴 **Dangerous (`#ef4444`)**: Confirmed phishing attacks, active brand impersonation, and critical deception vectors.
+- 🟡 **Potentially Dangerous (`#f59e0b`)**: Raw IP hosts, unencrypted login endpoints, free hosting abuse, or elevated heuristic warnings.
+- 🔵 **Potentially Safe (`#3b82f6`)**: Standard unverified web domains, open-source documentation, and blogs with low-to-moderate risk.
+- 🟢 **Safe (`#10b981`)**: Verified global authority domains (`google.com`, `github.com`, `wikipedia.org`, etc.) with zero-threat baselines.
+
+### 4. Canonical Machine Learning & Heuristic Signals
+- **Canonical Normalization**: Standardizes ports, normalizes schemes, and strips artificial `www.` bias so `domain.com` and `www.domain.com` evaluate identically.
+- **TF-IDF + Logistic Regression Pipeline ([train.py](file:///c:/Users/amaan/Desktop/phish-zero/train.py))**: Trained on 220,000+ domain-grouped samples with benign path augmentation.
+- **Brand Impersonation & Typosquat Detection**: Monitors major targets (PayPal, Apple, Google, Microsoft, Netflix, Chase, Bank of America, Amazon, etc.) embedded inside lookalike hostnames.
+- **High-Risk Burner TLDs**: Flags disposable domains (`.tk`, `.ml`, `.ga`, `.cf`, `.gq`, `.top`, `.xyz`, `.buzz`, `.cam`, etc.).
+- **Free App Host & Tunnel Abuse**: Identifies phishing forms hosted on disposable public services (`firebaseapp.com`, `weeblysite.com`, `repl.co`, `ngrok.io`, `pages.dev`, etc.).
+
+### 5. Tactical Cyber-Forensic UI ([static/app.js](file:///c:/Users/amaan/Desktop/phish-zero/static/app.js), [static/style.css](file:///c:/Users/amaan/Desktop/phish-zero/static/style.css))
+- Pure black canvas with ambient technical coordinate grid and radial illumination.
+- Typography pairing **Space Grotesk** (display), **Inter** (body), and **JetBrains Mono** (telemetry).
+- Quick-audit preset chips with color-coded threat tags for 1-click testing.
+- Mechanical 20-segment VU meter illuminating smoothly with threat severity.
+- Animated live scanning HUD displaying sequential decomposition stages.
+- One-click clipboard utilities: **Copy Target URL**, **Copy Segment**, **Copy Audit Summary**, and **Inspect Raw JSON**.
+- Keyboard shortcuts (`/` to focus input, `Esc` to clear/blur).
 
 ---
 
 ## Evaluated Benchmark Performance
 
-Evaluated via `GroupShuffleSplit` by hostname to strictly prevent domain leakage between training and testing splits:
+Evaluated via `GroupShuffleSplit` strictly by hostname to prevent domain leakage between training and testing splits:
 
 | Metric | Score |
 | :--- | :--- |
@@ -45,13 +62,6 @@ Evaluated via `GroupShuffleSplit` by hostname to strictly prevent domain leakage
 | **Phishing F1** | `97.93%` |
 | **Benign False-Positive Rate** | `0.15%` |
 | **Evaluation Split** | 220,378 train rows / 46,215 test rows |
-
----
-
-## Requirements
-
-- Python 3.10 or newer
-- Virtual environment with dependencies in `requirements.txt`
 
 ---
 
@@ -72,32 +82,29 @@ If PowerShell script execution is restricted, run using the virtual environment 
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-### 2. Dataset
+### 2. Dataset & Model Training
 
-Ensure your dataset is placed at `data/urls.csv` containing at least `URL` and `label` columns (with `0` / `phishing` and `1` / `benign`).
-
-### 3. Train the Model
+A trained model bundle is included in `model/url_model.joblib`. To retrain from `data/urls.csv`:
 
 ```powershell
 .\.venv\Scripts\python.exe train.py
 ```
 
-Generates the calibrated model bundle at `model/url_model.joblib` and evaluation metrics at `model/metrics.json`.
-
-### 4. Run the Web Application
+### 3. Launch Web Application
 
 ```powershell
 .\.venv\Scripts\python.exe app.py
 ```
 
-Access the interface in your browser at:
-**http://127.0.0.1:5000**
+Open your browser at: **http://127.0.0.1:5000**
 
-### 5. Run Automated Tests
+### 4. Run Automated Test Suite
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
+
+All 9 test cases covering safe, caution, warning, and danger threat levels should pass.
 
 ---
 
@@ -137,7 +144,10 @@ Content-Type: application/json
   "hostname": "paypal-verification-account-update.tk",
   "registered_domain": "paypal-verification-account-update.tk",
   "prediction": "phishing",
-  "phishing_score": 99.9,
+  "threat_level": "danger",
+  "threat_label": "DANGEROUS // THREAT CONFIRMED",
+  "threat_color": "#ef4444",
+  "phishing_score": 100.0,
   "ml_score": 99.9,
   "heuristic_score": 100.0,
   "is_top_authority": false,
@@ -150,26 +160,72 @@ Content-Type: application/json
     "has_query": false,
     "findings_count": 4
   },
+  "dissection": [
+    {
+      "type": "scheme",
+      "label": "SCHEME",
+      "value": "http://",
+      "raw": "http",
+      "severity": "medium",
+      "entropy": 1.5,
+      "length": 7,
+      "explanation": "Unencrypted HTTP transport protocol.",
+      "tag": "HTTP-INSECURE"
+    },
+    {
+      "type": "domain",
+      "label": "APEX DOMAIN",
+      "value": "paypal-verification-account-update",
+      "raw": "paypal-verification-account-update",
+      "severity": "critical",
+      "entropy": 3.72,
+      "length": 34,
+      "explanation": "Brand impersonation alert: mentions 'paypal' but root registry is 'paypal-verification-account-update.tk'.",
+      "tag": "BRAND-SPOOF"
+    },
+    {
+      "type": "tld",
+      "label": "TLD",
+      "value": ".tk",
+      "raw": ".tk",
+      "severity": "high",
+      "entropy": 1.0,
+      "length": 3,
+      "explanation": "High-risk TLD (.tk): statistically associated with burner phishing campaigns.",
+      "tag": "HIGH-RISK-TLD"
+    },
+    {
+      "type": "path",
+      "label": "PATH",
+      "value": "/login",
+      "raw": "/login",
+      "severity": "high",
+      "entropy": 2.32,
+      "length": 6,
+      "explanation": "Endpoint targets authentication credentials: login.",
+      "tag": "CREDENTIAL-TARGET"
+    }
+  ],
+  "graph_data": {
+    "risk_vectors": [
+      { "id": "lexical", "name": "Lexical Entropy", "score": 91.2, "status": "critical" },
+      { "id": "structure", "name": "Host Deception", "score": 40.0, "status": "warning" },
+      { "id": "brand", "name": "Brand Spoofing", "score": 100.0, "status": "critical" },
+      { "id": "tld", "name": "TLD Risk", "score": 95.0, "status": "critical" },
+      { "id": "transport", "name": "Transport Risk", "score": 85.0, "status": "critical" },
+      { "id": "intent", "name": "Credential Intent", "score": 95.0, "status": "critical" }
+    ],
+    "route_topology": {
+      "is_diverted": true,
+      "detected_brand": "paypal",
+      "summary": "Deceptive Routing Detected: The link displays 'paypal' to impersonate an authentic service, but traffic diverts to 'paypal-verification-account-update.tk' on .tk."
+    }
+  },
   "findings": [
     {
-      "name": "Unencrypted HTTP Scheme",
-      "detail": "Connection is unencrypted. Legitimate services requesting credentials require TLS/HTTPS.",
-      "severity": "medium"
-    },
-    {
-      "name": "High-Risk TLD (.tk)",
-      "detail": "The top-level domain .tk is statistically overrepresented in disposable phishing campaigns.",
-      "severity": "high"
-    },
-    {
       "name": "Brand Impersonation Target: PAYPAL",
-      "detail": "Hostname contains brand keyword \"paypal\", but the registered destination domain is \"paypal-verification-account-update.tk\", not official domain \"paypal.com\".",
+      "detail": "Hostname contains brand keyword \"paypal\", but registered destination domain is \"paypal-verification-account-update.tk\".",
       "severity": "critical"
-    },
-    {
-      "name": "Credential Harvesting Signals",
-      "detail": "URL path or query includes sensitive target keywords: login.",
-      "severity": "high"
     }
   ],
   "caveat": "Machine-learning & security signal intelligence. A low score indicates no known phishing anomalies, but always exercise caution."
@@ -178,9 +234,12 @@ Content-Type: application/json
 
 ---
 
-## Important Security Context
+## Zero-Egress Privacy Model
 
-phish-zero operates in an isolated zero-egress mode: it evaluates lexical syntax, topological domain structures, and statistical n-gram probabilities without making outbound HTTP network requests or rendering remote untrusted code. It is designed as an adversarial triage and link forensics tool.
+`phish-zero` operates entirely locally without external API telemetry or remote data egress:
+- All lexical breakdown, Shannon entropy calculations, and topological route analysis happen locally on the server and client.
+- The machine learning model executes entirely offline via `scikit-learn`.
+- No outbound network connections are initiated to the inspected URLs, preventing tracking pixels or active exploitation.
 
 ---
 
