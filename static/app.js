@@ -99,6 +99,14 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+const navQuickFocusBtn = document.querySelector("#nav-quick-focus-btn");
+if (navQuickFocusBtn) {
+  navQuickFocusBtn.addEventListener("click", () => {
+    input.focus();
+    input.select();
+  });
+}
+
 // Preset Chips Quick Audit
 presetChips.forEach((chip) => {
   chip.addEventListener("click", () => {
@@ -125,7 +133,7 @@ form.addEventListener("submit", async (event) => {
 });
 
 // Execute URL Audit
-async function executeAudit(url) {
+async function executeAudit(url, vector = "direct_input") {
   clearError();
   startScanningHud();
 
@@ -133,7 +141,7 @@ async function executeAudit(url) {
     const response = await fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ url, vector }),
     });
 
     const payload = await response.json();
@@ -220,6 +228,27 @@ function renderForensicReport(data) {
     verdictEl.textContent = "BENIGN VERIFIED SIGNALS";
     pillEl.textContent = data.threat_label || "SAFE // VERIFIED";
     pillEl.className = "verdict-pill safe";
+  }
+
+  // Attack Vector Banner (Quishing / Direct)
+  const vectorBanner = document.querySelector("#vector-banner");
+  const vectorBannerName = document.querySelector("#vector-banner-name");
+  if (vectorBanner && vectorBannerName) {
+    if (data.vector === "quishing") {
+      vectorBanner.hidden = false;
+      vectorBanner.className = "vector-banner";
+      if (threatLevel === "safe") {
+        vectorBanner.classList.add("safe-vector");
+        vectorBannerName.textContent = "QR CODE PAYLOAD (QUISHING AUDIT: BENIGN)";
+      } else if (threatLevel === "warning") {
+        vectorBanner.classList.add("warning-vector");
+        vectorBannerName.textContent = "QR CODE PHISHING VECTOR (QUISHING: ELEVATED RISK)";
+      } else {
+        vectorBannerName.textContent = "QR CODE PHISHING VECTOR (QUISHING DETECTED)";
+      }
+    } else {
+      vectorBanner.hidden = true;
+    }
   }
 
   // URL display
@@ -906,3 +935,232 @@ toggleJsonBtn.addEventListener("click", () => {
     ? "HIDE RAW TELEMETRY JSON"
     : "VIEW RAW TELEMETRY JSON";
 });
+
+// ==========================================
+// QUISHING (QR CODE) FORENSICS & DECODER
+// 100% Client-Side / Zero-Egress Forensics
+// ==========================================
+const qrTriggerBtn = document.querySelector("#qr-trigger-btn");
+const quishModal = document.querySelector("#quish-modal");
+const quishBackdrop = document.querySelector("#quish-backdrop");
+const quishCloseBtn = document.querySelector("#quish-close-btn");
+const quishDropzone = document.querySelector("#quish-dropzone");
+const quishFileInput = document.querySelector("#quish-file-input");
+const quishStatus = document.querySelector("#quish-status");
+const quishStatusText = document.querySelector("#quish-status-text");
+const quishSampleBtns = document.querySelectorAll(".quish-sample-btn");
+
+function openQuishModal() {
+  if (!quishModal) return;
+  quishModal.hidden = false;
+  resetQuishStatus("STATUS: AWAITING QR IMAGE INPUT");
+  quishDropzone.focus();
+}
+
+function closeQuishModal() {
+  if (!quishModal) return;
+  quishModal.hidden = true;
+  quishDropzone.classList.remove("scanning", "dragover");
+}
+
+function resetQuishStatus(text) {
+  if (!quishStatus || !quishStatusText) return;
+  quishStatus.className = "quish-status";
+  quishStatusText.textContent = text;
+}
+
+function setQuishStatus(type, text) {
+  if (!quishStatus || !quishStatusText) return;
+  quishStatus.className = `quish-status ${type}`;
+  quishStatusText.textContent = text;
+}
+
+if (qrTriggerBtn) {
+  qrTriggerBtn.addEventListener("click", () => {
+    openQuishModal();
+  });
+}
+
+if (quishCloseBtn) {
+  quishCloseBtn.addEventListener("click", closeQuishModal);
+}
+
+if (quishBackdrop) {
+  quishBackdrop.addEventListener("click", closeQuishModal);
+}
+
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && quishModal && !quishModal.hidden) {
+    closeQuishModal();
+  }
+});
+
+if (quishDropzone && quishFileInput) {
+  quishDropzone.addEventListener("click", () => {
+    quishFileInput.click();
+  });
+
+  quishFileInput.addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      handleQrFile(file);
+    }
+    quishFileInput.value = "";
+  });
+
+  quishDropzone.addEventListener("dragenter", (e) => {
+    e.preventDefault();
+    quishDropzone.classList.add("dragover");
+  });
+
+  quishDropzone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    quishDropzone.classList.add("dragover");
+  });
+
+  quishDropzone.addEventListener("dragleave", (e) => {
+    e.preventDefault();
+    quishDropzone.classList.remove("dragover");
+  });
+
+  quishDropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    quishDropzone.classList.remove("dragover");
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) {
+      handleQrFile(file);
+    }
+  });
+}
+
+// Global Clipboard Paste Listener (Ctrl+V)
+window.addEventListener("paste", (e) => {
+  const items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf("image") !== -1) {
+      const file = items[i].getAsFile();
+      if (file) {
+        e.preventDefault();
+        openQuishModal();
+        handleQrFile(file);
+        break;
+      }
+    }
+  }
+});
+
+// Process image file
+function handleQrFile(file) {
+  if (!file.type.startsWith("image/")) {
+    setQuishStatus("error", "ERROR: Selected file is not an image.");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    decodeQrImageSource(event.target.result, file.name);
+  };
+  reader.onerror = () => {
+    setQuishStatus("error", "ERROR: Could not read image file.");
+  };
+  reader.readAsDataURL(file);
+}
+
+// Sample QR preset buttons
+quishSampleBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const src = btn.getAttribute("data-src");
+    const name = btn.getAttribute("data-name") || "Preset QR";
+    if (src) {
+      decodeQrImageSource(src, name);
+    }
+  });
+});
+
+// Core Zero-Egress QR Decoder using vendored jsQR
+function decodeQrImageSource(imgSrc, label = "Image") {
+  quishDropzone.classList.add("scanning");
+  setQuishStatus("scanning", `ANALYZING QR MATRIX: ${label}...`);
+
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+
+  img.onload = () => {
+    try {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+      let decodedText = null;
+
+      // 1. Primary: jsQR (offline, local, zero egress)
+      if (typeof jsQR === "function") {
+        const qrResult = jsQR(imgData.data, canvas.width, canvas.height, {
+          inversionAttempts: "attemptBoth",
+        });
+        if (qrResult && qrResult.data) {
+          decodedText = qrResult.data.trim();
+        }
+      }
+
+      // 2. Secondary fallback: Native BarcodeDetector if available
+      if (!decodedText && "BarcodeDetector" in window) {
+        const detector = new BarcodeDetector({ formats: ["qr_code"] });
+        detector.detect(img)
+          .then((barcodes) => {
+            if (barcodes.length > 0 && barcodes[0].rawValue) {
+              handleDecodedPayload(barcodes[0].rawValue.trim());
+            } else {
+              handleQrNotFound();
+            }
+          })
+          .catch(() => handleQrNotFound());
+        return;
+      }
+
+      if (decodedText) {
+        handleDecodedPayload(decodedText);
+      } else {
+        handleQrNotFound();
+      }
+    } catch (err) {
+      quishDropzone.classList.remove("scanning");
+      setQuishStatus("error", `DECODE FAILED: ${err.message}`);
+    }
+  };
+
+  img.onerror = () => {
+    quishDropzone.classList.remove("scanning");
+    setQuishStatus("error", "ERROR: Failed to render image source.");
+  };
+
+  img.src = imgSrc;
+}
+
+function handleDecodedPayload(payload) {
+  quishDropzone.classList.remove("scanning");
+  setQuishStatus("success", `SUCCESS: PAYLOAD EXTRACTED [${payload.length > 36 ? payload.slice(0, 34) + "..." : payload}]`);
+
+  // Populate into input bar
+  input.value = payload;
+  clearInputBtn.hidden = false;
+
+  showToast(`QUISHING PAYLOAD DECODED: ${payload}`);
+
+  // Automatically close modal after brief visual feedback and execute audit
+  setTimeout(() => {
+    closeQuishModal();
+    executeAudit(payload, "quishing");
+  }, 420);
+}
+
+function handleQrNotFound() {
+  quishDropzone.classList.remove("scanning");
+  setQuishStatus("error", "SCAN FAILED: No valid QR code pattern found in this image.");
+}

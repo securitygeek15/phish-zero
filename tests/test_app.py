@@ -67,6 +67,20 @@ class URLValidationTests(unittest.TestCase):
         self.assertEqual(data["threat_color"], "#ef4444")
         self.assertGreater(data["phishing_score"], 70.0)
 
+    def test_analyze_quishing_vector(self):
+        client = app.test_client()
+        response = client.post(
+            "/api/analyze",
+            json={
+                "url": "http://paypal-verification-account-update.tk/login",
+                "vector": "quishing"
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data["vector"], "quishing")
+        self.assertEqual(data["vector_label"], "QR Code (Quishing)")
+
 
 if __name__ == "__main__":
     unittest.main()

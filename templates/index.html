@@ -4,47 +4,44 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#080808">
-  <meta name="description" content="PHISH//ZERO — Ultra-minimalist tactical link forensics & neural phishing intelligence engine.">
-  <title>PHISH // ZERO — Tactical Link Forensics</title>
+  <meta name="description" content="phish-zero — Ultra-minimalist tactical link forensics & neural phishing intelligence engine.">
+  <title>phish-zero</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=5">
+  <link rel="icon" type="image/png" sizes="64x64" href="{{ url_for('static', filename='favicon.png') }}?v=5">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}?v=5">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=3.0">
 </head>
 <body class="theme-monochrome">
   <div class="ambient-grid" aria-hidden="true"></div>
   <div class="ambient-glow" aria-hidden="true"></div>
 
   <div class="app-shell">
-    <!-- TOP TELEMETRY BAR -->
+    <!-- GLASSMORPHIC TOPBAR -->
     <header class="topbar">
       <div class="brand-group">
-        <a class="brand-mark" href="/" aria-label="PHISH ZERO Home">
-          <span class="mark-brackets">[</span>
-          <span class="mark-core">P<span class="slash">//</span>0</span>
-          <span class="mark-brackets">]</span>
+        <a class="nav-brand-link" href="/" aria-label="phish-zero home">
+          <img src="{{ url_for('static', filename='emblem.png') }}?v=5" alt="phish-zero logo" class="nav-brand-logo">
+          <span class="nav-brand-title">phish-zero</span>
         </a>
-        <div class="brand-text">
-          <span class="brand-title">PHISH // ZERO</span>
-          <span class="brand-subtitle">NEURAL LINK FORENSICS</span>
-        </div>
       </div>
 
-      <div class="telemetry-bar">
-        <div class="telemetry-item">
-          <span class="telemetry-label">SYSTEM</span>
-          <span class="telemetry-value"><span class="pulse-dot"></span><span id="system-status">ENGINE READY</span></span>
+      <div class="nav-telemetry">
+        <div class="glass-pill status-pill" title="Local Inference Engine Status">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span class="pill-dim">SYSTEM:</span>
+          <span id="system-status" class="pill-bold">ONLINE</span>
         </div>
-        <div class="telemetry-divider">/</div>
-        <div class="telemetry-item hide-mobile">
-          <span class="telemetry-label">RUNTIME</span>
-          <span class="telemetry-value">LOCAL // ZERO-EGRESS</span>
+        <div class="glass-pill hide-mobile" title="100% Offline Zero-Egress Forensics">
+          <span class="pill-icon">🛡️</span>
+          <span>zero-egress</span>
         </div>
-        <div class="telemetry-divider hide-mobile">/</div>
-        <div class="telemetry-item hide-mobile">
-          <span class="telemetry-label">KEYBOARD</span>
-          <kbd class="kbd-pill" title="Press / to focus search">/</kbd>
-        </div>
+        <button type="button" id="nav-quick-focus-btn" class="glass-kbd-pill hide-mobile" title="Focus search bar (Press /)">
+          <kbd class="kbd-key">/</kbd>
+          <span>audit</span>
+        </button>
       </div>
     </header>
 
@@ -103,9 +100,9 @@
       <form id="scan-form" class="scan-console" novalidate>
         <div class="console-label-row">
           <label for="url-input" class="console-label">
-            <span class="console-cursor">&gt;</span> ENTER TARGET URL OR DOMAIN
+            <span class="console-cursor">&gt;</span> ENTER TARGET URL OR SCAN QR CODE
           </label>
-          <span class="console-shortcut">PRESS [ENTER] TO SCAN</span>
+          <span class="console-shortcut">ENTER TO SCAN &bull; CTRL+V TO PASTE QR</span>
         </div>
 
         <div class="console-input-wrap">
@@ -114,7 +111,7 @@
             id="url-input"
             name="url"
             type="text"
-            placeholder="e.g. https://target-destination.com/auth"
+            placeholder="e.g. https://target-destination.com/auth or scan QR"
             autocomplete="off"
             autocorrect="off"
             autocapitalize="off"
@@ -122,6 +119,19 @@
             required
           >
           <button type="button" id="clear-input" class="clear-btn" aria-label="Clear input field" hidden>✕</button>
+          <button type="button" id="qr-trigger-btn" class="qr-action-btn" title="Quishing Scanner: Decode QR Code Image (or press Ctrl+V anywhere)">
+            <svg class="qr-btn-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+              <circle cx="6.5" cy="6.5" r="1.5" fill="currentColor"></circle>
+              <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"></circle>
+              <circle cx="6.5" cy="17.5" r="1.5" fill="currentColor"></circle>
+              <circle cx="17.5" cy="17.5" r="1.5" fill="currentColor"></circle>
+            </svg>
+            <span class="qr-btn-text">SCAN QR</span>
+          </button>
           <button id="scan-button" type="submit" class="submit-btn">
             <span class="btn-text">AUDIT LINK</span>
             <span class="btn-glyph" aria-hidden="true">↗</span>
@@ -168,6 +178,17 @@
             <span>COPY AUDIT</span>
             <span aria-hidden="true">📋</span>
           </button>
+        </div>
+      </div>
+
+      <!-- ATTACK VECTOR BANNER (INDICATES QUISHING / DEEPLINK) -->
+      <div id="vector-banner" class="vector-banner" hidden>
+        <div class="vector-banner-left">
+          <span class="vector-badge-tag">VECTOR</span>
+          <span id="vector-banner-name" class="vector-name">QR CODE PHISHING ("QUISHING")</span>
+        </div>
+        <div class="vector-banner-right">
+          <span class="vector-meta">Client-Side Decoded &bull; Zero External Network Egress</span>
         </div>
       </div>
 
@@ -395,12 +416,89 @@
     </footer>
   </div>
 
+  <!-- QUISHING (QR PHISHING) FORENSICS MODAL -->
+  <div id="quish-modal" class="quish-modal" hidden aria-modal="true" role="dialog" aria-labelledby="quish-modal-title">
+    <div class="quish-backdrop" id="quish-backdrop"></div>
+    <div class="quish-dialog">
+      <div class="quish-dialog-header">
+        <div class="quish-title-group">
+          <span class="section-tag-inline">QUISHING FORENSICS</span>
+          <h3 id="quish-modal-title" class="quish-heading">OFFLINE QR VECTOR DECODER</h3>
+        </div>
+        <button type="button" id="quish-close-btn" class="quish-close" aria-label="Close modal">✕</button>
+      </div>
+
+      <p class="quish-explainer">
+        Quishing (QR Phishing) smuggles credential traps through physical stickers or email images to evade link filters. PhishZero unpacks and audits the target payload <strong>100% client-side with zero external network egress</strong>.
+      </p>
+
+      <!-- DROPZONE -->
+      <div id="quish-dropzone" class="quish-dropzone" tabindex="0" role="button" aria-label="Upload QR code image">
+        <div class="crosshair ch-tl"></div>
+        <div class="crosshair ch-tr"></div>
+        <div class="crosshair ch-bl"></div>
+        <div class="crosshair ch-br"></div>
+        <div class="quish-laser" id="quish-laser"></div>
+
+        <div class="dropzone-content">
+          <div class="dropzone-icon" aria-hidden="true">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+              <path d="M10 3v4"></path>
+              <path d="M14 10h4"></path>
+              <path d="M10 14v4"></path>
+              <path d="M7 10H3"></path>
+            </svg>
+          </div>
+          <span class="dropzone-prompt">DRAG &amp; DROP QR CODE IMAGE HERE</span>
+          <span class="dropzone-subtext">OR CLICK TO BROWSE &bull; OR PRESS <strong>CTRL + V</strong> ANYWHERE</span>
+        </div>
+
+        <input type="file" id="quish-file-input" accept="image/*" hidden>
+      </div>
+
+      <!-- STATUS FEEDBACK -->
+      <div id="quish-status" class="quish-status">
+        <span class="quish-status-dot">■</span>
+        <span id="quish-status-text">STATUS: AWAITING QR IMAGE INPUT</span>
+      </div>
+
+      <!-- QUICK DEMO PRESET QR CODES (FOR HACKATHON VIDEO!) -->
+      <div class="quish-presets-area">
+        <div class="quish-presets-label">
+          <span>HACKATHON DEMO PRESETS (1-CLICK TEST):</span>
+        </div>
+        <div class="quish-preset-grid">
+          <button type="button" class="quish-sample-btn" data-src="/static/samples/quish_paypal.png" data-name="Fake PayPal Invoice QR">
+            <span class="sample-tag threat">DANGEROUS</span>
+            <span class="sample-title">Fake PayPal Invoice QR</span>
+            <span class="sample-desc">paypal-verification.tk</span>
+          </button>
+          <button type="button" class="quish-sample-btn" data-src="/static/samples/quish_microsoft.png" data-name="Spoofed Microsoft 365 MFA QR">
+            <span class="sample-tag threat">DANGEROUS</span>
+            <span class="sample-title">Spoofed Office 365 MFA QR</span>
+            <span class="sample-desc">login.microsoftonline.security-verify.com</span>
+          </button>
+          <button type="button" class="quish-sample-btn" data-src="/static/samples/quish_google.png" data-name="Clean Google SSO QR">
+            <span class="sample-tag safe">SAFE</span>
+            <span class="sample-title">Google SSO QR</span>
+            <span class="sample-desc">workspace.google.com</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- TOAST NOTIFICATION -->
   <div id="toast" class="toast" role="status" aria-live="polite" hidden>
     <span class="toast-indicator">■</span>
     <span id="toast-message" class="toast-message">COPIED TO CLIPBOARD</span>
   </div>
 
+  <script src="{{ url_for('static', filename='jsqr.min.js') }}"></script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

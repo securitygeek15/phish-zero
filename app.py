@@ -5,7 +5,7 @@ import re
 from urllib.parse import urlparse
 
 import joblib
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_from_directory
 
 from url_features import (
     normalize_for_model,
@@ -23,6 +23,13 @@ MODEL_PATH = BASE_DIR / "model" / "url_model.joblib"
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
+
+
+@app.get("/favicon.ico")
+def favicon():
+    return send_from_directory("static", "favicon.ico", mimetype="image/vnd.microsoft.icon")
 
 logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
@@ -131,6 +138,8 @@ def analyze():
     if not isinstance(body, dict):
         return jsonify({"error": "Send a JSON object containing a URL."}), 400
 
+    vector = str(body.get("vector", "direct_input")).strip().lower()
+
     try:
         raw_url, host = normalize_url(body.get("url", ""))
     except ValueError as exc:
@@ -236,6 +245,8 @@ def analyze():
     return jsonify({
         "url": raw_url,
         "hostname": host,
+        "vector": vector,
+        "vector_label": "QR Code (Quishing)" if vector == "quishing" else "Direct Link Audit",
         "registered_domain": reg_domain,
         "prediction": prediction,
         "threat_level": threat_level,
