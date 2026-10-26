@@ -2,12 +2,13 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 9/9 Passing](https://img.shields.io/badge/tests-9%2F9%20passing-brightgreen.svg)]()
+[![Tests: 10/10 Passing](https://img.shields.io/badge/tests-10%2F10%20passing-brightgreen.svg)]()
 [![Privacy: Zero--Egress](https://img.shields.io/badge/privacy-100%25%20local%20%2F%20zero--egress-blueviolet.svg)]()
+[![Forensics: URL & Quishing](https://img.shields.io/badge/forensics-URL%20%26%20Quishing%20(QR)-informational.svg)]()
 
-> **Inspect and verify suspicious links safely — 100% offline with zero data leakage.**
+> **Inspect and verify suspicious links and QR codes safely — 100% offline with zero data leakage.**
 
-`phish-zero` is a fast, local link forensics tool and phishing detector. It breaks down suspicious URLs, highlights deceptive tricks (like lookalike domains or hidden redirects), and scores risk using a machine learning model paired with rule-based heuristics — all on your machine without connecting to the target website.
+`phish-zero` is a fast, local link forensics tool and phishing intelligence engine. It deconstructs suspicious URLs and QR code payloads ("quishing"), flags deceptive tricks (like lookalike domains or hidden redirects), and scores risk using a machine learning model paired with rule-based heuristics — all on your machine without connecting to the target website.
 
 ---
 
@@ -41,11 +42,28 @@ python app.py
 
 ### 3. Open in Browser
 
-Go to **[http://127.0.0.1:5000](http://127.0.0.1:5000)** in your browser, paste any link, and get an instant security verdict!
+Go to **[http://127.0.0.1:5000](http://127.0.0.1:5000)** in your browser, paste any link or scan a QR code, and get an instant security verdict!
 
 ---
 
 ## ✨ Key Features at a Glance
+
+### 📷 QR Code Phishing ("Quishing") Forensics Engine
+Attackers increasingly embed credential harvesting traps inside QR codes in emails, PDF invoices, and physical flyers to bypass perimeter email URL gateways.
+- **100% Client-Side Decoding**: Uses vendored `jsQR` to unpack QR codes directly in your browser. Not a single pixel or byte of your image ever leaves your computer.
+- **Instant Input Modes**:
+  - Drag-and-drop any QR image file (`.png`, `.jpg`, `.webp`)
+  - **Clipboard Paste (`Ctrl + V`)**: Screenshot any suspicious QR code and hit `Ctrl + V` anywhere to audit it instantly
+  - File browser upload
+  - **1-Click Demo Presets**: Includes pre-built test QR codes (Spoofed Microsoft 365 MFA reset, Fake PayPal Invoice, and clean Google SSO) for instant hackathon demos
+- **Payload Extraction & Audit**: Automatically extracts the embedded lure destination and feeds it directly into the 18-signal forensic inspection engine and ML classifier in under 5ms.
+
+---
+
+### 🪟 Floating Glassmorphism HUD & Official Emblem
+- Features a floating glassmorphic navbar with translucent backdrop blur (`backdrop-filter: blur(20px)`), ambient specular border highlights, dynamic live system latency indicator (`SYSTEM: ONLINE [LOCAL]`), zero-egress privacy lock, and the official `phish-zero` emblem.
+
+---
 
 ### 🎯 4-Tier Color-Coded Verdicts
 Every scanned link is categorized into a clear, color-coded security tier so you immediately know whether it's safe to open:
@@ -109,32 +127,39 @@ To ensure realistic real-world evaluation, testing used `GroupShuffleSplit` part
 ## 🛠️ How It Works Under the Hood
 
 ```text
-                           [ Your Target URL ]
-                                    │
-                      [ Canonical Preprocessing ]
-                      (Scheme, Port, IDNA Host)
-                                    │
-              ┌─────────────────────┴─────────────────────┐
-              ▼                                           ▼
-   [ Machine Learning Pipeline ]               [ Heuristic Rule Engine ]
-   - Character N-Gram TF-IDF                   - Brand Impersonation Checks
-   - Trained Logistic Regression               - Deceptive Subdomains
-   - Statistical Pattern Score                 - Disposable TLDs & Free Hosts
-              │                                - Credential Target Keywords
-              └─────────────────────┬─────────────────────┘
-                                    ▼
-                      [ Composite Risk Synthesis ]
-                                    │
-         ┌──────────────────────────┼──────────────────────────┐
-         ▼                          ▼                          ▼
+     [ Direct URL Input ]   ──or──   [ QR Code ("Quishing") Image ]
+               │                                   │
+               │                      [ Client-Side jsQR Decoder ]
+               │                      (100% Offline / Zero-Egress)
+               └─────────────────┬─────────────────┘
+                                 ▼
+                        [ Target URL Payload ]
+                                 │
+                    [ Canonical Preprocessing ]
+                    (Scheme, Port, IDNA Host)
+                                 │
+           ┌─────────────────────┴─────────────────────┐
+           ▼                                           ▼
+[ Machine Learning Pipeline ]               [ Heuristic Rule Engine ]
+- Character N-Gram TF-IDF                   - Brand Impersonation Checks
+- Trained Logistic Regression               - Deceptive Subdomains
+- Statistical Pattern Score                 - Disposable TLDs & Free Hosts
+           │                                - Credential Target Keywords
+           └─────────────────────┬─────────────────────┘
+                                 ▼
+                   [ Composite Risk Synthesis ]
+                                 │
+      ┌──────────────────────────┼──────────────────────────┐
+      ▼                          ▼                          ▼
 [ URL Dissector ]         [ 6-Axis Risk Radar ]      [ Route Topology Map ]
 Decomposed tokens         Visual threat surface      Visual redirection flow
 ```
 
-1. **Normalization**: Canonicalizes formatting, decodes Punycode/IDNA characters, and removes artificial `www.` bias so `site.com` and `www.site.com` evaluate identically.
-2. **ML Inference**: Inspects sub-word character patterns across the URL to detect statistical anomalies common in phishing URLs.
-3. **Heuristic Engine**: Checks for known brand spoofing targets (PayPal, Apple, Google, Microsoft, Chase, etc.), abused free hosting providers (`firebaseapp.com`, `pages.dev`, `ngrok.io`), and suspicious TLDs.
-4. **Composite Verdict**: Merges the ML probability and structural signals into a calibrated 0–100 risk score.
+1. **Ingestion**: Accepts raw URLs or decodes QR codes offline via vendored `jsQR` (no image data is transmitted over any network).
+2. **Normalization**: Canonicalizes formatting, decodes Punycode/IDNA characters, and removes artificial `www.` bias so `site.com` and `www.site.com` evaluate identically.
+3. **ML Inference**: Inspects sub-word character patterns across the URL to detect statistical anomalies common in phishing URLs.
+4. **Heuristic Engine**: Checks for known brand spoofing targets (PayPal, Apple, Google, Microsoft, Chase, etc.), abused free hosting providers (`firebaseapp.com`, `pages.dev`, `ngrok.io`), and suspicious TLDs.
+5. **Composite Verdict**: Merges the ML probability and structural signals into a calibrated 0–100 risk score.
 
 ---
 
@@ -161,9 +186,15 @@ curl http://127.0.0.1:5000/api/health
 
 ### Analyze a Link
 ```bash
+# Standard URL inspection
 curl -X POST http://127.0.0.1:5000/api/analyze \
   -H "Content-Type: application/json" \
   -d '{"url": "http://paypal-verification-account-update.tk/login"}'
+
+# Or with Quishing (QR) telemetry tag
+curl -X POST http://127.0.0.1:5000/api/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"url": "http://paypal-verification-account-update.tk/login", "vector": "quishing"}'
 ```
 
 **Response (Sample):**
@@ -180,6 +211,7 @@ curl -X POST http://127.0.0.1:5000/api/analyze \
   "ml_score": 99.9,
   "heuristic_score": 100.0,
   "is_top_authority": false,
+  "vector": "quishing",
   "dissection": [
     { "type": "scheme", "label": "SCHEME", "value": "http://", "severity": "medium" },
     { "type": "domain", "label": "APEX DOMAIN", "value": "paypal-verification-account-update", "severity": "critical" },
@@ -205,13 +237,13 @@ curl -X POST http://127.0.0.1:5000/api/analyze \
 
 ## 🧪 Running Automated Tests
 
-To run the complete automated test suite (verifying URL normalization, health checks, and all 4 threat levels):
+To run the complete automated test suite (verifying URL normalization, health checks, Quishing vector telemetry, and all 4 threat levels):
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-All 9 tests should pass with `OK`.
+All 10 tests should pass with `OK`.
 
 ---
 
@@ -220,7 +252,8 @@ All 9 tests should pass with `OK`.
 | Shortcut | Action |
 | :--- | :--- |
 | `/` | Instantly focus and select the URL input bar |
-| `Esc` | Clear the input bar or remove focus |
+| `Ctrl + V` | Paste any QR screenshot from clipboard anywhere to audit instantly |
+| `Esc` | Close QR scanner modal or clear the URL input bar |
 | `Enter` | Run the security audit |
 
 ---
@@ -233,18 +266,25 @@ phish-zero/
 ├── url_features.py        # URL dissector, Shannon entropy & heuristics
 ├── train.py               # Model training script with GroupShuffleSplit
 ├── requirements.txt       # Python dependencies
+├── assets/
+│   └── logophishzero.png  # Official high-resolution logo & branding asset
 ├── data/
 │   └── urls.csv           # Reference training dataset
 ├── model/
 │   ├── url_model.joblib   # Pre-trained model bundle
 │   └── metrics.json       # Benchmark metrics and validation report
 ├── static/
-│   ├── app.js             # Frontend interactivity, SVG radar & topology charts
-│   └── style.css          # Design system & threat-tier styling
+│   ├── app.js             # Frontend interactivity, QR scanner, SVG radar & topology charts
+│   ├── style.css          # Design system, glassmorphic HUD & threat-tier styling
+│   ├── jsqr.min.js        # Vendored offline client-side QR decoder engine (zero-egress)
+│   ├── emblem.png         # Glassmorphic navbar brand emblem
+│   ├── favicon.ico        # Root browser favicon
+│   ├── favicon.png        # High-DPI browser icon
+│   └── samples/           # Pre-packaged quishing test QR samples (PayPal, M365, Google)
 ├── templates/
-│   └── index.html         # Web application interface
+│   └── index.html         # Web application interface & Quishing HUD modal
 └── tests/
-    └── test_app.py        # Automated test suite (9 test cases)
+    └── test_app.py        # Automated test suite (10 unit test cases)
 ```
 
 ---
@@ -252,3 +292,4 @@ phish-zero/
 ## 📄 License
 
 This project is open-source and available under the [MIT License](LICENSE).
+
