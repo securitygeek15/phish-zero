@@ -15,6 +15,7 @@ from url_features import (
     compute_graph_data,
     BRAND_MAP,
 )
+from xai_explainer import explain_url_prediction
 
 
 
@@ -241,6 +242,7 @@ def analyze():
     parsed = urlparse(raw_url)
     dissection = dissect_url(raw_url, host, security_analysis)
     graph_data = compute_graph_data(raw_url, host, security_analysis, ml_score * 100)
+    xai_data = explain_url_prediction(pipeline, raw_url)
 
     return jsonify({
         "url": raw_url,
@@ -270,6 +272,7 @@ def analyze():
         },
         "dissection": dissection,
         "graph_data": graph_data,
+        "xai": xai_data,
         "findings": findings,
         "caveat": (
             "Machine-learning & security signal intelligence. "

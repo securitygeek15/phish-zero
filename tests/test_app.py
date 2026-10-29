@@ -81,6 +81,27 @@ class URLValidationTests(unittest.TestCase):
         self.assertEqual(data["vector"], "quishing")
         self.assertEqual(data["vector_label"], "QR Code (Quishing)")
 
+    def test_analyze_xai_attribution(self):
+        client = app.test_client()
+        response = client.post(
+            "/api/analyze",
+            json={"url": "http://paypal-verification-account-update.tk/login"},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertIn("xai", data)
+        xai = data["xai"]
+        self.assertEqual(xai["status"], "ready")
+        self.assertIn("intercept", xai)
+        self.assertIn("decision_logit", xai)
+        self.assertGreater(xai["net_risk_evidence"], 0)
+        self.assertIsInstance(xai["top_risk_tokens"], list)
+        self.assertGreater(len(xai["top_risk_tokens"]), 0)
+        self.assertIsInstance(xai["char_heatmap"], list)
+        self.assertGreater(len(xai["char_heatmap"]), 0)
+        self.assertIn("narrative", xai)
+        self.assertTrue(len(xai["narrative"]) > 20)
+
 
 if __name__ == "__main__":
     unittest.main()

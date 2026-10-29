@@ -2,8 +2,9 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 10/10 Passing](https://img.shields.io/badge/tests-10%2F10%20passing-brightgreen.svg)]()
+[![Tests: 11/11 Passing](https://img.shields.io/badge/tests-11%2F11%20passing-brightgreen.svg)]()
 [![Privacy: Zero--Egress](https://img.shields.io/badge/privacy-100%25%20local%20%2F%20zero--egress-blueviolet.svg)]()
+[![Explainable AI: Linear Shapley](https://img.shields.io/badge/Explainable%20AI-Linear%20Shapley%20XAI-8b5cf6.svg)]()
 [![Forensics: URL & Quishing](https://img.shields.io/badge/forensics-URL%20%26%20Quishing%20(QR)-informational.svg)]()
 
 > **Inspect and verify suspicious links and QR codes safely — 100% offline with zero data leakage.**
@@ -57,6 +58,17 @@ Attackers increasingly embed credential harvesting traps inside QR codes in emai
   - File browser upload
   - **1-Click Demo Presets**: Includes pre-built test QR codes (Spoofed Microsoft 365 MFA reset, Fake PayPal Invoice, and clean Google SSO) for instant hackathon demos
 - **Payload Extraction & Audit**: Automatically extracts the embedded lure destination and feeds it directly into the 18-signal forensic inspection engine and ML classifier in under 5ms.
+
+---
+
+### 🔬 Explainable AI (XAI) Sub-Word Token Attribution Lens
+Judges and security analysts demand to know *why* a machine learning model flagged a link rather than trusting a black box. `phish-zero` introduces a mathematically exact, sub-millisecond local Explainable AI engine:
+- **Exact Linear Shapley Attribution**: Decomposes the Logistic Regression decision boundary ($z = \beta_0 + \sum x_j \beta_j$) without stochastic approximations or slow perturbation sampling (e.g. LIME).
+- **Interactive Character Risk Heatmap**: Maps active n-gram weights directly to characters in the URL string. High-risk sub-tokens (`.tk`, `update`, `/login`) glow in neon red/amber, while trusted structural anchors glow in emerald green. Hovering or tapping any character reveals its exact contribution impact and primary n-gram pattern.
+- **Dual Attribution Stream**:
+  - **Top Threat Drivers (+Risk)**: Ranks the top 6 character n-grams pushing the model toward Phishing with exact coefficient weights and contribution percentage bars.
+  - **Top Trust Anchors (-Risk)**: Highlights the top 6 structural n-grams pulling the model toward Safe.
+- **Mathematical Logit HUD & Synthesis**: Visualizes the exact linear formula ($\text{Base Prior } \beta_0 + \text{Malicious Evidence} - \text{Benign Resistance} = \text{Net Logit } z \to \sigma(z)$) alongside a plain-English AI decision synthesis narrative.
 
 ---
 
@@ -229,6 +241,23 @@ curl -X POST http://127.0.0.1:5000/api/analyze \
       "detected_brand": "paypal",
       "summary": "Deceptive Routing Detected: The link displays 'paypal' to impersonate an authentic service, but traffic diverts to 'paypal-verification-account-update.tk'."
     }
+  },
+  "xai": {
+    "status": "ready",
+    "intercept": 3.121,
+    "decision_logit": 10.361,
+    "ml_probability": 100.0,
+    "net_risk_evidence": 8.66,
+    "net_safe_evidence": 1.42,
+    "top_risk_tokens": [
+      { "ngram": "tk/", "weight": 3.55, "contrib": 0.35, "pct": 4.0 },
+      { "ngram": ".tk/", "weight": 3.54, "contrib": 0.35, "pct": 4.0 },
+      { "ngram": "http:", "weight": 9.42, "contrib": 0.306, "pct": 3.5 }
+    ],
+    "top_safe_tokens": [
+      { "ngram": "://p", "weight": -2.41, "contrib": -0.116, "pct": 8.2 }
+    ],
+    "narrative": "The model's linear decision boundary flagged this URL with a logit of +10.36. Adversarial risk is predominantly concentrated in the sub-word patterns 'tk/', '.tk/', '.tk', generating +8.66 units of malicious evidence that overcome benign structural anchors."
   }
 }
 ```
@@ -237,13 +266,13 @@ curl -X POST http://127.0.0.1:5000/api/analyze \
 
 ## 🧪 Running Automated Tests
 
-To run the complete automated test suite (verifying URL normalization, health checks, Quishing vector telemetry, and all 4 threat levels):
+To run the complete automated test suite (verifying URL normalization, health checks, Quishing vector telemetry, Explainable AI attributions, and all 4 threat levels):
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-All 10 tests should pass with `OK`.
+All 11 tests should pass with `OK`.
 
 ---
 
@@ -263,6 +292,7 @@ All 10 tests should pass with `OK`.
 ```text
 phish-zero/
 ├── app.py                 # Flask server & REST API
+├── xai_explainer.py        # Sub-word token attribution & Linear Shapley XAI engine
 ├── url_features.py        # URL dissector, Shannon entropy & heuristics
 ├── train.py               # Model training script with GroupShuffleSplit
 ├── requirements.txt       # Python dependencies
@@ -274,7 +304,7 @@ phish-zero/
 │   ├── url_model.joblib   # Pre-trained model bundle
 │   └── metrics.json       # Benchmark metrics and validation report
 ├── static/
-│   ├── app.js             # Frontend interactivity, QR scanner, SVG radar & topology charts
+│   ├── app.js             # Frontend interactivity, QR scanner, XAI lens & SVG charts
 │   ├── style.css          # Design system, glassmorphic HUD & threat-tier styling
 │   ├── jsqr.min.js        # Vendored offline client-side QR decoder engine (zero-egress)
 │   ├── emblem.png         # Glassmorphic navbar brand emblem
@@ -284,7 +314,7 @@ phish-zero/
 ├── templates/
 │   └── index.html         # Web application interface & Quishing HUD modal
 └── tests/
-    └── test_app.py        # Automated test suite (10 unit test cases)
+    └── test_app.py        # Automated test suite (11 unit test cases)
 ```
 
 ---

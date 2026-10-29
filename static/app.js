@@ -302,6 +302,11 @@ function renderForensicReport(data) {
     renderGraphAnalyzer(data.graph_data, threatLevel);
   }
 
+  // 3. Render Explainable AI (XAI) Attribution Lens
+  if (data.xai) {
+    renderXaiExplainer(data.xai, threatLevel);
+  }
+
   // Evidence Ledger
   renderFindings(data.findings || []);
 
@@ -861,6 +866,185 @@ function renderFindings(findings) {
   }
 }
 
+// ==========================================
+// 04 // EXPLAINABLE AI (XAI) ATTRIBUTION LENS
+// ==========================================
+function renderXaiExplainer(xai, threatLevel) {
+  const xaiSection = document.querySelector("#xai-section");
+  if (!xaiSection || !xai || xai.status !== "ready") return;
+
+  // 1. Narrative text
+  const narrativeEl = document.querySelector("#xai-narrative-text");
+  if (narrativeEl) {
+    narrativeEl.textContent = xai.narrative;
+  }
+
+  // 2. Character Heatmap Stream
+  const heatmapStream = document.querySelector("#xai-heatmap-stream");
+  const hoverChar = document.querySelector("#xai-hover-char");
+  const hoverToken = document.querySelector("#xai-hover-token");
+  const hoverImpact = document.querySelector("#xai-hover-impact");
+  const hoverIntensity = document.querySelector("#xai-hover-intensity");
+  const hoverTier = document.querySelector("#xai-hover-tier");
+
+  function updateHoverDetail(item) {
+    if (!item) return;
+    if (hoverChar) hoverChar.textContent = item.char;
+    if (hoverToken) hoverToken.textContent = `PRIMARY N-GRAM: ${item.top_token ? "'" + item.top_token + "'" : "—"}`;
+    if (hoverImpact) {
+      const imp = item.token_impact !== undefined ? item.token_impact : item.risk_score;
+      hoverImpact.textContent = `${imp > 0 ? "+" : ""}${imp.toFixed(3)}`;
+      hoverImpact.style.color = imp > 0 ? "#f87171" : "#34d399";
+    }
+    if (hoverIntensity) {
+      hoverIntensity.textContent = `${Math.round(item.intensity * 100)}%`;
+    }
+    if (hoverTier) {
+      hoverTier.textContent = item.tier.toUpperCase();
+      hoverTier.className = `detail-val tier-${item.tier}`;
+      if (item.tier === "critical") hoverTier.style.color = "#ef4444";
+      else if (item.tier === "high") hoverTier.style.color = "#f59e0b";
+      else if (item.tier === "medium") hoverTier.style.color = "#fde047";
+      else hoverTier.style.color = "#34d399";
+    }
+  }
+
+  if (heatmapStream && Array.isArray(xai.char_heatmap)) {
+    heatmapStream.replaceChildren();
+
+    let maxCharItem = null;
+    let maxIntensity = -1;
+
+    xai.char_heatmap.forEach((item, idx) => {
+      const span = document.createElement("span");
+      span.className = `xai-char ${item.tier || "low"}`;
+      span.textContent = item.char;
+      span.setAttribute("data-index", idx);
+      span.title = `Char '${item.char}' | Pattern: ${item.top_token || "—"} | Impact: ${item.token_impact}`;
+
+      span.addEventListener("mouseenter", () => {
+        document.querySelectorAll(".xai-char.active").forEach((el) => el.classList.remove("active"));
+        span.classList.add("active");
+        updateHoverDetail(item);
+      });
+
+      span.addEventListener("click", () => {
+        document.querySelectorAll(".xai-char.active").forEach((el) => el.classList.remove("active"));
+        span.classList.add("active");
+        updateHoverDetail(item);
+      });
+
+      heatmapStream.appendChild(span);
+
+      if (item.intensity > maxIntensity) {
+        maxIntensity = item.intensity;
+        maxCharItem = item;
+      }
+    });
+
+    // Default focus to the highest risk character or first character
+    const defaultFocus = maxCharItem || xai.char_heatmap[0];
+    if (defaultFocus) {
+      updateHoverDetail(defaultFocus);
+      const firstEl = heatmapStream.querySelector(`[data-index="${defaultFocus.index}"]`);
+      if (firstEl) firstEl.classList.add("active");
+    }
+  }
+
+  // 3. Top Phishing Attribution Tokens (Threat Drivers)
+  const riskList = document.querySelector("#xai-risk-tokens-list");
+  if (riskList) {
+    riskList.replaceChildren();
+    const riskTokens = xai.top_risk_tokens || [];
+    if (riskTokens.length === 0) {
+      const emptyNote = document.createElement("p");
+      emptyNote.className = "token-empty-note";
+      emptyNote.textContent = "No significant adversarial sub-tokens detected.";
+      riskList.appendChild(emptyNote);
+    } else {
+      riskTokens.forEach((t) => {
+        const row = document.createElement("div");
+        row.className = "token-bar-row";
+
+        const name = document.createElement("span");
+        name.className = "token-name";
+        name.textContent = t.ngram;
+        name.title = `N-Gram '${t.ngram}' (Impact: +${t.contrib})`;
+
+        const track = document.createElement("div");
+        track.className = "token-track";
+        const fill = document.createElement("div");
+        fill.className = "token-fill risk";
+        fill.style.width = `${Math.max(10, Math.min(100, t.pct || 50))}%`;
+        track.appendChild(fill);
+
+        const weight = document.createElement("span");
+        weight.className = "token-weight risk";
+        weight.textContent = `+${t.weight.toFixed(2)}`;
+
+        row.append(name, track, weight);
+        riskList.appendChild(row);
+      });
+    }
+  }
+
+  // 4. Top Benign Attribution Tokens (Trust Anchors)
+  const safeList = document.querySelector("#xai-safe-tokens-list");
+  if (safeList) {
+    safeList.replaceChildren();
+    const safeTokens = xai.top_safe_tokens || [];
+    if (safeTokens.length === 0) {
+      const emptyNote = document.createElement("p");
+      emptyNote.className = "token-empty-note";
+      emptyNote.textContent = "No benign structural anchors detected.";
+      safeList.appendChild(emptyNote);
+    } else {
+      safeTokens.forEach((t) => {
+        const row = document.createElement("div");
+        row.className = "token-bar-row";
+
+        const name = document.createElement("span");
+        name.className = "token-name";
+        name.textContent = t.ngram;
+        name.title = `N-Gram '${t.ngram}' (Impact: ${t.contrib})`;
+
+        const track = document.createElement("div");
+        track.className = "token-track";
+        const fill = document.createElement("div");
+        fill.className = "token-fill safe";
+        fill.style.width = `${Math.max(10, Math.min(100, t.pct || 50))}%`;
+        track.appendChild(fill);
+
+        const weight = document.createElement("span");
+        weight.className = "token-weight safe";
+        weight.textContent = `${t.weight.toFixed(2)}`;
+
+        row.append(name, track, weight);
+        safeList.appendChild(row);
+      });
+    }
+  }
+
+  // 5. Mathematical Formula Terms
+  const termIntercept = document.querySelector("#xai-term-intercept");
+  const termRisk = document.querySelector("#xai-term-risk");
+  const termSafe = document.querySelector("#xai-term-safe");
+  const termLogit = document.querySelector("#xai-term-logit");
+  const termActivation = document.querySelector("#xai-term-activation");
+
+  if (termIntercept) termIntercept.textContent = `${xai.intercept > 0 ? "+" : ""}${xai.intercept.toFixed(2)}`;
+  if (termRisk) termRisk.textContent = `+${xai.net_risk_evidence.toFixed(2)}`;
+  if (termSafe) termSafe.textContent = `-${xai.net_safe_evidence.toFixed(2)}`;
+  if (termLogit) {
+    termLogit.textContent = `${xai.decision_logit > 0 ? "+" : ""}${xai.decision_logit.toFixed(2)}`;
+    termLogit.style.color = xai.decision_logit > 0 ? "#f87171" : "#34d399";
+  }
+  if (termActivation) {
+    termActivation.textContent = `${xai.ml_probability.toFixed(1)}%`;
+    termActivation.style.color = xai.ml_probability >= 50 ? "#f87171" : "#34d399";
+  }
+}
+
 // Error Handling
 function showError(msg) {
   errorBanner.textContent = `[ERROR] ${msg}`;
@@ -909,6 +1093,10 @@ copyReportBtn.addEventListener("click", () => {
     .map((f) => `- [${(f.severity || "INFO").toUpperCase()}] ${f.name}: ${f.detail}`)
     .join("\n");
 
+  const xaiSummary = d.xai && d.xai.status === "ready"
+    ? `\n## Explainable AI (XAI) Attribution\nLogit: ${d.xai.decision_logit > 0 ? "+" : ""}${d.xai.decision_logit} | P(Phish): ${d.xai.ml_probability}%\nTop Phishing Tokens: ${(d.xai.top_risk_tokens || []).map(t => `'${t.ngram}' (+${t.weight})`).join(', ') || 'None'}\nSynthesis: ${d.xai.narrative}\n`
+    : "";
+
   const reportText = [
     `# PHISH-ZERO FORENSIC AUDIT REPORT`,
     `Target: ${d.url}`,
@@ -917,10 +1105,10 @@ copyReportBtn.addEventListener("click", () => {
     `Phishing Score: ${d.phishing_score} / 100 (ML: ${d.ml_score}%, Heuristic: ${d.heuristic_score}%)`,
     `Authority: ${d.is_top_authority ? "VERIFIED TOP-TIER" : "STANDARD"}`,
     `Model: ${d.model_name}`,
-    ``,
+    xaiSummary,
     `## Forensic Signals (${(d.findings || []).length})`,
     findingsSummary,
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 
   navigator.clipboard.writeText(reportText).then(() => {
     showToast("AUDIT REPORT COPIED TO CLIPBOARD");

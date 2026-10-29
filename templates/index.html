@@ -360,11 +360,144 @@
         </div>
       </div>
 
+      <!-- EXPLAINABLE AI (XAI) FORENSIC LENS -->
+      <div id="xai-section" class="xai-section">
+        <div class="xai-header">
+          <div class="xai-title-wrap">
+            <span class="section-tag">04 // EXPLAINABLE AI (XAI)</span>
+            <h3 class="xai-title">Neural Frontier &amp; Sub-Word Token Attribution Lens</h3>
+          </div>
+          <div class="xai-badge-group">
+            <span class="xai-badge">EXACT LINEAR SHAPLEY ATTRIBUTION</span>
+            <span class="xai-badge sub">ZERO BLACK-BOX</span>
+          </div>
+        </div>
+
+        <!-- PLAIN-ENGLISH AI NARRATIVE BANNER -->
+        <div class="xai-narrative-card">
+          <div class="xai-narrative-header">
+            <span class="xai-narrative-icon">⚡</span>
+            <span class="xai-narrative-label">DECISION BOUNDARY SYNTHESIS</span>
+          </div>
+          <p id="xai-narrative-text" class="xai-narrative-text">
+            Evaluating mathematical logit contribution across 250,000 sub-word n-gram features...
+          </p>
+        </div>
+
+        <!-- INTERACTIVE CHARACTER HEATMAP -->
+        <div class="xai-heatmap-panel">
+          <div class="heatmap-top-bar">
+            <div class="heatmap-title-group">
+              <span class="heatmap-subtitle">CHARACTER-LEVEL RISK ATTRIBUTION HEATMAP</span>
+              <span class="micro-hint">HOVER / TAP ANY CHARACTER TO INSPECT ATTRIBUTION COEFFICIENT</span>
+            </div>
+            <div class="heatmap-legend">
+              <span class="legend-item"><span class="legend-dot critical"></span> Critical Threat Risk</span>
+              <span class="legend-item"><span class="legend-dot high"></span> Elevated Risk</span>
+              <span class="legend-item"><span class="legend-dot medium"></span> Moderate Risk</span>
+              <span class="legend-item"><span class="legend-dot low"></span> Low / Safe Anchor</span>
+            </div>
+          </div>
+
+          <!-- Heatmap Char Stream -->
+          <div id="xai-heatmap-stream" class="xai-heatmap-stream" role="region" aria-label="URL Character Attribution Heatmap">
+            <!-- Dynamically populated by app.js -->
+          </div>
+
+          <!-- Active Hovered Token Telemetry Strip -->
+          <div id="xai-token-detail" class="xai-token-detail">
+            <div class="token-detail-left">
+              <span class="token-detail-kicker">INSPECTED SUB-TOKEN</span>
+              <strong id="xai-hover-char" class="token-detail-glyph">/</strong>
+              <span id="xai-hover-token" class="token-detail-pattern">PRIMARY N-GRAM: —</span>
+            </div>
+            <div class="token-detail-right">
+              <div class="detail-metric">
+                <span class="detail-lbl">TOKEN IMPACT:</span>
+                <span id="xai-hover-impact" class="detail-val">—</span>
+              </div>
+              <div class="detail-metric">
+                <span class="detail-lbl">NORMALIZED INTENSITY:</span>
+                <span id="xai-hover-intensity" class="detail-val">—%</span>
+              </div>
+              <div class="detail-metric">
+                <span class="detail-lbl">LOCAL SEVERITY:</span>
+                <span id="xai-hover-tier" class="detail-val tier-clean">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DUAL ATTRIBUTION STREAM: PHISHING DRIVERS VS SAFE ANCHORS -->
+        <div class="xai-drivers-grid">
+          <!-- Top Risk Drivers (Red) -->
+          <div class="xai-driver-column risk">
+            <div class="driver-col-header">
+              <span class="driver-badge risk">THREAT DRIVERS</span>
+              <span class="driver-col-title">TOP PHISHING ATTRIBUTION TOKENS (+RISK)</span>
+            </div>
+            <div id="xai-risk-tokens-list" class="driver-token-list">
+              <!-- Dynamically populated by app.js -->
+            </div>
+          </div>
+
+          <!-- Top Safe Anchors (Green) -->
+          <div class="xai-driver-column safe">
+            <div class="driver-col-header">
+              <span class="driver-badge safe">TRUST ANCHORS</span>
+              <span class="driver-col-title">TOP BENIGN ATTRIBUTION TOKENS (-RISK)</span>
+            </div>
+            <div id="xai-safe-tokens-list" class="driver-token-list">
+              <!-- Dynamically populated by app.js -->
+            </div>
+          </div>
+        </div>
+
+        <!-- MATHEMATICAL LOGIT DECOMPOSITION FORMULA HUD -->
+        <div class="xai-formula-hud">
+          <div class="formula-header">
+            <span class="formula-kicker">MATHEMATICAL LINEAR DECOMPOSITION</span>
+            <span class="formula-rule">z = &beta;₀ + &sum; (TF-IDF &times; &beta;) &nbsp;&bull;&nbsp; &sigma;(z) = 1 / (1 + e⁻ᶻ)</span>
+          </div>
+          <div class="formula-terms-grid">
+            <div class="formula-term">
+              <span class="term-lbl">BASE PRIOR (&beta;₀)</span>
+              <strong id="xai-term-intercept" class="term-val">+3.12</strong>
+              <span class="term-desc">Model Intercept</span>
+            </div>
+            <div class="formula-op">+</div>
+            <div class="formula-term">
+              <span class="term-lbl">MALICIOUS EVIDENCE</span>
+              <strong id="xai-term-risk" class="term-val danger">+8.66</strong>
+              <span class="term-desc">&sum; Positive Weights</span>
+            </div>
+            <div class="formula-op">-</div>
+            <div class="formula-term">
+              <span class="term-lbl">BENIGN ANCHORS</span>
+              <strong id="xai-term-safe" class="term-val clean">-1.42</strong>
+              <span class="term-desc">&sum; Negative Weights</span>
+            </div>
+            <div class="formula-op">=</div>
+            <div class="formula-term highlight">
+              <span class="term-lbl">NET LOGIT (z)</span>
+              <strong id="xai-term-logit" class="term-val highlight">+10.36</strong>
+              <span class="term-desc">Decision Function</span>
+            </div>
+            <div class="formula-op">&rarr;</div>
+            <div class="formula-term activation">
+              <span class="term-lbl">ACTIVATION &sigma;(z)</span>
+              <strong id="xai-term-activation" class="term-val activation">99.9%</strong>
+              <span class="term-desc">Calibrated ML Output</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- FORENSIC EVIDENCE FEED -->
       <div class="evidence-ledger">
         <div class="ledger-header">
           <div>
-            <span class="section-tag">04 // EVIDENCE LEDGER</span>
+            <span class="section-tag">05 // EVIDENCE LEDGER</span>
             <h3 class="ledger-title">Observed Signals &amp; Heuristics</h3>
           </div>
           <span id="finding-count" class="micro-badge">0 SIGNALS DETECTED</span>
