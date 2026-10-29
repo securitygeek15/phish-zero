@@ -190,3 +190,4 @@ def explain_url_prediction(pipeline: Any, raw_url: str) -> Dict[str, Any]:
         "char_heatmap": char_heatmap,
         "narrative": narrative,
     }
+

@@ -58,13 +58,17 @@ async function refreshEngineHealth() {
     const health = await response.json();
     const latency = Math.round(performance.now() - startTime);
 
-    if (health.model_loaded) {
-      systemStatusText.textContent = `ONLINE [${latency}ms]`;
-    } else {
-      systemStatusText.textContent = "MODEL UNTRAINED";
+    if (systemStatusText) {
+      if (health.model_loaded) {
+        systemStatusText.textContent = `ONLINE [${latency}ms]`;
+      } else {
+        systemStatusText.textContent = "MODEL UNTRAINED";
+      }
     }
   } catch {
-    systemStatusText.textContent = "API OFFLINE";
+    if (systemStatusText) {
+      systemStatusText.textContent = "API OFFLINE";
+    }
   }
 }
 
