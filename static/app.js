@@ -966,6 +966,7 @@ function renderXaiExplainer(xai, threatLevel) {
       emptyNote.textContent = "No significant adversarial sub-tokens detected.";
       riskList.appendChild(emptyNote);
     } else {
+      const maxRiskContrib = Math.max(...riskTokens.map((t) => Math.abs(t.contrib) || 0.001));
       riskTokens.forEach((t) => {
         const row = document.createElement("div");
         row.className = "token-bar-row";
@@ -979,7 +980,8 @@ function renderXaiExplainer(xai, threatLevel) {
         track.className = "token-track";
         const fill = document.createElement("div");
         fill.className = "token-fill risk";
-        fill.style.width = `${Math.max(10, Math.min(100, t.pct || 50))}%`;
+        const barWidth = Math.round(((Math.abs(t.contrib) || 0) / maxRiskContrib) * 100);
+        fill.style.width = `${Math.max(14, barWidth)}%`;
         track.appendChild(fill);
 
         const weight = document.createElement("span");
@@ -1003,6 +1005,7 @@ function renderXaiExplainer(xai, threatLevel) {
       emptyNote.textContent = "No benign structural anchors detected.";
       safeList.appendChild(emptyNote);
     } else {
+      const maxSafeContrib = Math.max(...safeTokens.map((t) => Math.abs(t.contrib) || 0.001));
       safeTokens.forEach((t) => {
         const row = document.createElement("div");
         row.className = "token-bar-row";
@@ -1016,7 +1019,8 @@ function renderXaiExplainer(xai, threatLevel) {
         track.className = "token-track";
         const fill = document.createElement("div");
         fill.className = "token-fill safe";
-        fill.style.width = `${Math.max(10, Math.min(100, t.pct || 50))}%`;
+        const barWidth = Math.round(((Math.abs(t.contrib) || 0) / maxSafeContrib) * 100);
+        fill.style.width = `${Math.max(14, barWidth)}%`;
         track.appendChild(fill);
 
         const weight = document.createElement("span");
