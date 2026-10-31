@@ -12,6 +12,7 @@
 <p align="center">
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python 3.10+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"></a>
+  <a href="#"><img src="https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker"></a>
   <a href="#"><img src="https://img.shields.io/badge/tests-11%2F11%20passing-brightgreen.svg" alt="Tests"></a>
   <a href="#"><img src="https://img.shields.io/badge/privacy-100%25%20local%20%2F%20zero--egress-blueviolet.svg" alt="Privacy"></a>
   <a href="#"><img src="https://img.shields.io/badge/Explainable%20AI-Linear%20Shapley%20XAI-8b5cf6.svg" alt="XAI"></a>
@@ -25,7 +26,19 @@
 
 ## ⚡ Quickstart
 
-### 1. Clone & Install
+### Option A: Docker (Fastest)
+
+```bash
+git clone https://github.com/securitygeek15/phish-zero.git
+cd phish-zero
+
+# Start instantly with Docker Compose
+docker compose up -d
+```
+Open **[http://127.0.0.1:5000](http://127.0.0.1:5000)** in your browser!
+
+### Option B: Local Python Installation
+
 ```bash
 git clone https://github.com/securitygeek15/phish-zero.git
 cd phish-zero
@@ -39,12 +52,8 @@ python -m venv .venv
 # macOS / Linux:
 source .venv/bin/activate
 
-# Install dependencies
+# Install dependencies & run
 pip install -r requirements.txt
-```
-
-### 2. Launch
-```bash
 python app.py
 ```
 Open **[http://127.0.0.1:5000](http://127.0.0.1:5000)** in your browser.
@@ -158,6 +167,8 @@ curl -X POST http://127.0.0.1:5000/api/analyze \
 
 ```text
 phish-zero/
+├── Dockerfile             # Multi-stage container specification
+├── docker-compose.yml     # Container orchestration
 ├── app.py                 # Flask server & REST API
 ├── xai_explainer.py       # Linear Shapley Explainable AI engine
 ├── url_features.py        # URL dissector, Shannon entropy & heuristics

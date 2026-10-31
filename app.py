@@ -1,6 +1,7 @@
 from pathlib import Path
 import ipaddress
 import logging
+import os
 import re
 from urllib.parse import urlparse
 
@@ -287,8 +288,10 @@ def request_too_large(_error):
 
 
 if __name__ == "__main__":
+    host = os.environ.get("HOST", "127.0.0.1")
+    port = int(os.environ.get("PORT", "5000"))
     app.run(
         debug=False,
-        host="127.0.0.1",
-        port=5000,
+        host=host,
+        port=port,
     )
