@@ -103,5 +103,22 @@ class URLValidationTests(unittest.TestCase):
         self.assertTrue(len(xai["narrative"]) > 20)
 
 
+    def test_batch_analyze_endpoint(self):
+        client = app.test_client()
+        urls = [
+            "https://google.com",
+            "http://paypal-verification-account-update.tk/login",
+            "https://news.ycombinator.com",
+        ]
+        response = client.post("/api/batch_analyze", json={"urls": urls})
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data["total"], 3)
+        self.assertIn("results", data)
+        self.assertIn("summary", data)
+        self.assertGreaterEqual(data["summary"]["safe"], 1)
+        self.assertGreaterEqual(data["summary"]["danger"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()

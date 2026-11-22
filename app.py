@@ -133,119 +133,98 @@ def health():
     })
 
 
-@app.post("/api/analyze")
-def analyze():
-    body = request.get_json(silent=True)
-
-    if not isinstance(body, dict):
-        return jsonify({"error": "Send a JSON object containing a URL."}), 400
-
-    vector = str(body.get("vector", "direct_input")).strip().lower()
-
-    try:
-        raw_url, host = normalize_url(body.get("url", ""))
-    except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
-
-    try:
-        bundle = load_model()
-    except Exception:
-        app.logger.exception("Unable to load the model")
-        return jsonify({"error": "The trained model could not be loaded."}), 500
+def evaluate_single_url(input_url, vector="direct_input", bundle=None):
+    """
+    Evaluates a single target URL against the zero-trust ML model and heuristics.
+    Returns (result_dict, status_code).
+    """
+    raw_url, host = normalize_url(input_url)
 
     if bundle is None:
-        return jsonify({
+        bundle = load_model()
+
+    if bundle is None:
+        return {
             "error": "The model has not been trained yet.",
             "next_step": "Run: .\\.venv\\Scripts\\python.exe train.py",
-        }), 503
+        }, 503
 
-    try:
-        pipeline = bundle["pipeline"]
-        model_url = normalize_for_model(raw_url)
+    pipeline = bundle["pipeline"]
+    model_url = normalize_for_model(raw_url)
 
-        probabilities = pipeline.predict_proba([model_url])[0]
-        classes = list(pipeline.classes_)
+    probabilities = pipeline.predict_proba([model_url])[0]
+    classes = list(pipeline.classes_)
 
-        positive_label = bundle.get("positive_label", "phishing")
+    positive_label = bundle.get("positive_label", "phishing")
 
-        if positive_label not in classes:
-            raise ValueError(
-                f"Expected class {positive_label!r}; found {classes!r}"
-            )
-
-        phishing_index = classes.index(positive_label)
-        ml_score = float(probabilities[phishing_index])
-
-        # Deep security signal heuristics
-        security_analysis = analyze_security_signals(raw_url, host)
-        heuristic_risk = security_analysis["heuristic_risk"]
-        is_top_authority = security_analysis["is_top_authority"]
-        reg_domain = security_analysis["reg_domain"]
-        findings = security_analysis["findings"]
-
-        # Check for confirmed brand impersonation, IP destination, or critical findings
-        has_critical = any(f.get("severity") == "critical" for f in findings)
-        brand_spoofed = any(
-            brand in host.lower() and reg_domain != official and not host.endswith("." + official)
-            for brand, official in BRAND_MAP.items()
+    if positive_label not in classes:
+        raise ValueError(
+            f"Expected class {positive_label!r}; found {classes!r}"
         )
-        is_ip = False
-        try:
-            ipaddress.ip_address(host.strip("[]"))
-            is_ip = True
-        except ValueError:
-            pass
 
-        # 4-Tier Security Channel Calibration:
-        # - Danger (Red): Confirmed brand impersonation, spoofed subdomains, critical hazards
-        # - Warning (Yellow): Potentially dangerous (raw numerical IPs, free hosts, unencrypted logins, elevated risk)
-        # - Caution (Blue): Potentially safe (general unverified domains, community sites with clean/minor signals)
-        # - Safe (Green): Verified top authority domains and pristine zero-threat targets
-        if is_top_authority and heuristic_risk < 0.35:
-            phishing_score = min(ml_score * 0.05, 0.015)
-            threat_level = "safe"
-            threat_label = "SAFE // VERIFIED"
-            threat_color = "#10b981"
-            prediction = "benign"
-        elif brand_spoofed or (has_critical and not is_ip) or (heuristic_risk >= 0.75 and not is_ip):
-            phishing_score = max(ml_score, 0.985)
-            threat_level = "danger"
-            threat_label = "DANGEROUS // THREAT CONFIRMED"
-            threat_color = "#ef4444"
-            prediction = "phishing"
-        elif is_ip or heuristic_risk >= 0.35 or (ml_score >= 0.60 and not is_top_authority):
-            phishing_score = max(0.48, min(0.68, 0.45 + heuristic_risk * 0.20 + ml_score * 0.10))
-            threat_level = "warning"
-            threat_label = "POTENTIALLY DANGEROUS"
-            threat_color = "#f59e0b"
-            prediction = "phishing" if phishing_score >= 0.50 else "suspicious"
-        elif not is_top_authority or ml_score >= 0.12 or heuristic_risk >= 0.10:
-            phishing_score = max(0.16, min(0.38, 0.15 + ml_score * 0.25 + heuristic_risk * 0.15))
-            threat_level = "caution"
-            threat_label = "POTENTIALLY SAFE"
-            threat_color = "#3b82f6"
-            prediction = "benign"
-        else:
-            phishing_score = max(0.005, min(0.10, ml_score * 0.20))
-            threat_level = "safe"
-            threat_label = "SAFE // VERIFIED"
-            threat_color = "#10b981"
-            prediction = "benign"
+    phishing_index = classes.index(positive_label)
+    ml_score = float(probabilities[phishing_index])
 
-        phishing_score = max(0.001, min(0.999, phishing_score))
+    # Deep security signal heuristics
+    security_analysis = analyze_security_signals(raw_url, host)
+    heuristic_risk = security_analysis["heuristic_risk"]
+    is_top_authority = security_analysis["is_top_authority"]
+    reg_domain = security_analysis["reg_domain"]
+    findings = security_analysis["findings"]
 
-    except Exception:
-        app.logger.exception("Model prediction failed")
-        return jsonify({
-            "error": "Model prediction failed. Check the model bundle and training labels."
-        }), 500
+    # Check for confirmed brand impersonation, IP destination, or critical findings
+    has_critical = any(f.get("severity") == "critical" for f in findings)
+    brand_spoofed = any(
+        brand in host.lower() and reg_domain != official and not host.endswith("." + official)
+        for brand, official in BRAND_MAP.items()
+    )
+    is_ip = False
+    try:
+        ipaddress.ip_address(host.strip("[]"))
+        is_ip = True
+    except ValueError:
+        pass
+
+    # 4-Tier Security Channel Calibration:
+    if is_top_authority and heuristic_risk < 0.35:
+        phishing_score = min(ml_score * 0.05, 0.015)
+        threat_level = "safe"
+        threat_label = "SAFE // VERIFIED"
+        threat_color = "#10b981"
+        prediction = "benign"
+    elif brand_spoofed or (has_critical and not is_ip) or (heuristic_risk >= 0.75 and not is_ip):
+        phishing_score = max(ml_score, 0.985)
+        threat_level = "danger"
+        threat_label = "DANGEROUS // THREAT CONFIRMED"
+        threat_color = "#ef4444"
+        prediction = "phishing"
+    elif is_ip or heuristic_risk >= 0.35 or (ml_score >= 0.60 and not is_top_authority):
+        phishing_score = max(0.48, min(0.68, 0.45 + heuristic_risk * 0.20 + ml_score * 0.10))
+        threat_level = "warning"
+        threat_label = "POTENTIALLY DANGEROUS"
+        threat_color = "#f59e0b"
+        prediction = "phishing" if phishing_score >= 0.50 else "suspicious"
+    elif not is_top_authority or ml_score >= 0.12 or heuristic_risk >= 0.10:
+        phishing_score = max(0.16, min(0.38, 0.15 + ml_score * 0.25 + heuristic_risk * 0.15))
+        threat_level = "caution"
+        threat_label = "POTENTIALLY SAFE"
+        threat_color = "#3b82f6"
+        prediction = "benign"
+    else:
+        phishing_score = max(0.005, min(0.10, ml_score * 0.20))
+        threat_level = "safe"
+        threat_label = "SAFE // VERIFIED"
+        threat_color = "#10b981"
+        prediction = "benign"
+
+    phishing_score = max(0.001, min(0.999, phishing_score))
 
     parsed = urlparse(raw_url)
     dissection = dissect_url(raw_url, host, security_analysis)
     graph_data = compute_graph_data(raw_url, host, security_analysis, ml_score * 100)
     xai_data = explain_url_prediction(pipeline, raw_url)
 
-    return jsonify({
+    return {
         "url": raw_url,
         "hostname": host,
         "vector": vector,
@@ -279,6 +258,72 @@ def analyze():
             "Machine-learning & security signal intelligence. "
             "A low score indicates no known phishing anomalies, but always exercise caution."
         ),
+    }, 200
+
+
+@app.post("/api/analyze")
+def analyze():
+    body = request.get_json(silent=True)
+
+    if not isinstance(body, dict):
+        return jsonify({"error": "Send a JSON object containing a URL."}), 400
+
+    vector = str(body.get("vector", "direct_input")).strip().lower()
+
+    try:
+        data, status = evaluate_single_url(body.get("url", ""), vector=vector)
+        return jsonify(data), status
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception:
+        app.logger.exception("Analysis execution failed")
+        return jsonify({"error": "Link analysis failed. Check server logs."}), 500
+
+
+@app.post("/api/batch_analyze")
+def batch_analyze():
+    body = request.get_json(silent=True)
+
+    if not isinstance(body, dict) or not isinstance(body.get("urls"), list):
+        return jsonify({"error": "Send a JSON object containing a 'urls' list."}), 400
+
+    raw_urls = [str(u).strip() for u in body.get("urls", []) if str(u).strip()][:50]
+    if not raw_urls:
+        return jsonify({"error": "The 'urls' list cannot be empty."}), 400
+
+    try:
+        bundle = load_model()
+    except Exception:
+        app.logger.exception("Unable to load model for batch")
+        return jsonify({"error": "The trained model could not be loaded."}), 500
+
+    if bundle is None:
+        return jsonify({
+            "error": "The model has not been trained yet.",
+            "next_step": "Run: .\\.venv\\Scripts\\python.exe train.py",
+        }), 503
+
+    results = []
+    summary = {"danger": 0, "warning": 0, "caution": 0, "safe": 0, "error": 0}
+
+    for u in raw_urls:
+        try:
+            data, status = evaluate_single_url(u, vector="batch_feed", bundle=bundle)
+            if status == 200:
+                results.append(data)
+                level = data.get("threat_level", "caution")
+                summary[level] = summary.get(level, 0) + 1
+            else:
+                results.append({"url": u, "error": data.get("error", "Evaluation failed")})
+                summary["error"] += 1
+        except Exception as exc:
+            results.append({"url": u, "error": str(exc)})
+            summary["error"] += 1
+
+    return jsonify({
+        "total": len(results),
+        "results": results,
+        "summary": summary,
     })
 
 

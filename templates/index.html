@@ -29,6 +29,18 @@
       </div>
 
       <div class="nav-telemetry">
+        <button type="button" id="nav-batch-btn" class="glass-pill-btn" title="Batch Multi-URL Ingestion & Triage">
+          <span class="pill-icon">📦</span>
+          <span>batch audit</span>
+        </button>
+        <button type="button" id="nav-history-btn" class="glass-pill-btn" title="Audit Session History & Diff Comparator">
+          <span class="pill-icon">⏱</span>
+          <span id="history-badge-text">history (0)</span>
+        </button>
+        <button type="button" id="nav-benchmark-btn" class="glass-pill-btn" title="Run Local Adversarial Benchmark Suite">
+          <span class="pill-icon">⚡</span>
+          <span>benchmark</span>
+        </button>
         <div class="glass-pill hide-mobile" title="100% Offline Zero-Egress Forensics">
           <span class="pill-icon">🛡️</span>
           <span>zero-egress</span>
@@ -191,12 +203,13 @@
       <div class="target-url-panel">
         <div class="target-label-bar">
           <div class="panel-title-group">
-            <span class="section-tag-inline">02 // DISSECTOR</span>
-            <span class="panel-heading">INTERACTIVE URL DECONSTRUCTOR</span>
+            <span class="section-tag-inline">02 // FORENSIC LAB</span>
+            <span class="panel-heading">INTERACTIVE DECONSTRUCTION &amp; ATTACK VECTORS</span>
           </div>
           <div class="dissector-controls">
-            <span class="micro-hint">CLICK ANY SEGMENT TO INSPECT FORENSIC WEIGHT</span>
+            <span class="micro-hint">SUB-SYSTEM FORENSICS</span>
             <button type="button" id="copy-url-btn" class="micro-btn" title="Copy raw URL">COPY FULL URI</button>
+            <button type="button" id="defang-copy-btn" class="micro-btn highlight" title="Copy defanged safe CTI URL (hxxps[://]...)">DEFANG CTI</button>
           </div>
         </div>
 
@@ -205,40 +218,256 @@
           <code id="result-url" class="mono-code">https://example.com</code>
         </div>
 
-        <!-- Token Chain -->
-        <div class="dissector-chain-wrap">
-          <div class="chain-legend">
-            <span>DECOMPOSED URI TOKENS:</span>
-            <span class="legend-hint">CLICK TOKEN FOR DEEP FORENSIC METRICS</span>
+        <!-- Dissector Sub-Navigation Tabs -->
+        <div class="dissector-subtabs" role="tablist" aria-label="Forensic Sub-views">
+          <button type="button" class="dissector-subtab active" data-subview="deconstruct" id="subtab-deconstruct">
+            <span>⌕ URI DECONSTRUCTOR</span>
+          </button>
+          <button type="button" class="dissector-subtab" data-subview="homoglyph" id="subtab-homoglyph">
+            <span>⚯ UNICODE HOMOGLYPH MATRIX</span>
+          </button>
+          <button type="button" class="dissector-subtab" data-subview="mutation" id="subtab-mutation">
+            <span>⚗ WHAT-IF MUTATION LAB</span>
+          </button>
+          <button type="button" class="dissector-subtab" data-subview="entropy" id="subtab-entropy">
+            <span>∿ SHANNON ENTROPY WAVEFORM</span>
+          </button>
+        </div>
+
+        <!-- SUBVIEW 1: DECONSTRUCTOR -->
+        <div id="subview-deconstruct" class="dissector-subview active">
+          <div class="dissector-chain-wrap">
+            <div class="chain-legend">
+              <span>DECOMPOSED URI TOKENS:</span>
+              <span class="legend-hint">CLICK TOKEN FOR DEEP FORENSIC METRICS</span>
+            </div>
+            <div id="dissector-chain" class="dissector-chain" role="tablist" aria-label="URL Segments">
+              <!-- Dynamically populated by app.js -->
+            </div>
           </div>
-          <div id="dissector-chain" class="dissector-chain" role="tablist" aria-label="URL Segments">
-            <!-- Dynamically populated by app.js -->
+
+          <!-- Selected Token Inspector Drawer -->
+          <div id="token-inspector" class="token-inspector">
+            <div class="inspector-top">
+              <div class="inspector-title-row">
+                <span id="inspector-type" class="inspector-badge">SCHEME</span>
+                <strong id="inspector-val" class="inspector-val">https://</strong>
+                <span id="inspector-severity" class="severity-pill clean">CLEAN</span>
+              </div>
+              <button type="button" id="copy-token-btn" class="micro-btn" title="Copy selected token">COPY SEGMENT</button>
+            </div>
+            <p id="inspector-desc" class="inspector-desc">Encrypted TLS transport layer.</p>
+            <div class="inspector-metrics">
+              <div class="metric-pill">
+                <span class="metric-lbl">LENGTH:</span>
+                <span id="inspector-len" class="metric-val">8 chars</span>
+              </div>
+              <div class="metric-pill">
+                <span class="metric-lbl">SHANNON ENTROPY:</span>
+                <span id="inspector-entropy" class="metric-val">1.92</span>
+              </div>
+              <div class="metric-pill">
+                <span class="metric-lbl">SECURITY TAG:</span>
+                <span id="inspector-tag" class="metric-val">TLS-ENCRYPTED</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Selected Token Inspector Drawer -->
-        <div id="token-inspector" class="token-inspector">
-          <div class="inspector-top">
-            <div class="inspector-title-row">
-              <span id="inspector-type" class="inspector-badge">SCHEME</span>
-              <strong id="inspector-val" class="inspector-val">https://</strong>
-              <span id="inspector-severity" class="severity-pill clean">CLEAN</span>
+        <!-- SUBVIEW 2: UNICODE HOMOGLYPH MATRIX -->
+        <div id="subview-homoglyph" class="dissector-subview">
+          <div class="homoglyph-container">
+            <div class="homoglyph-head-meta">
+              <div class="homoglyph-status-box">
+                <span class="homoglyph-status-label">SCRIPT INTEGRITY:</span>
+                <span id="homoglyph-integrity-pill" class="homoglyph-pill clean">PURE LATIN ASCII</span>
+              </div>
+              <div class="homoglyph-punycode-box">
+                <span class="homoglyph-punycode-label">PUNYCODE (IDNA):</span>
+                <code id="homoglyph-punycode-val" class="homoglyph-punycode-val">xn--...</code>
+              </div>
             </div>
-            <button type="button" id="copy-token-btn" class="micro-btn" title="Copy selected token">COPY SEGMENT</button>
+
+            <!-- Optical Glyph Canvas Diff Viewer -->
+            <div class="glyph-canvas-wrap">
+              <div class="glyph-canvas-header">
+                <span class="glyph-canvas-title">OPTICAL GLYPH DIFF COMPARATOR (HTML5 CANVAS PIXEL CORRELATION)</span>
+                <span id="glyph-canvas-match-score" class="glyph-match-badge clean">100% CANONICAL</span>
+              </div>
+              <div class="glyph-canvas-row">
+                <div class="glyph-preview-col">
+                  <span class="glyph-col-label">AUDITED GLYPH</span>
+                  <div class="glyph-big-char" id="glyph-audited-char">a</div>
+                  <span id="glyph-audited-code" class="glyph-subcode">U+0061 (LATIN)</span>
+                </div>
+                <div class="glyph-diff-center">
+                  <canvas id="glyph-diff-canvas" class="glyph-diff-canvas" width="160" height="90"></canvas>
+                  <span class="glyph-diff-legend">RED = OPTICAL PIXEL DIVERGENCE</span>
+                </div>
+                <div class="glyph-preview-col">
+                  <span class="glyph-col-label">CANONICAL ASCII TARGET</span>
+                  <div class="glyph-big-char" id="glyph-canonical-char">a</div>
+                  <span id="glyph-canonical-code" class="glyph-subcode">U+0061 (ASCII)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Character Code Point Breakdown Table -->
+            <div class="homoglyph-table-wrap">
+              <div class="homoglyph-table-header">
+                <span>HOSTNAME CODE POINT DECOMPOSITION</span>
+                <span class="micro-hint">CLICK ANY CHARACTER TO INSPECT OPTICAL SIMILARITY</span>
+              </div>
+              <div class="homoglyph-table-scroll">
+                <table class="homoglyph-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>GLYPH</th>
+                      <th>CODE POINT</th>
+                      <th>UNICODE BLOCK / SCRIPT</th>
+                      <th>IMPOSTOR STATUS</th>
+                      <th>CANONICAL MATCH</th>
+                    </tr>
+                  </thead>
+                  <tbody id="homoglyph-table-body">
+                    <!-- Populated dynamically by app.js -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-          <p id="inspector-desc" class="inspector-desc">Encrypted TLS transport layer.</p>
-          <div class="inspector-metrics">
-            <div class="metric-pill">
-              <span class="metric-lbl">LENGTH:</span>
-              <span id="inspector-len" class="metric-val">8 chars</span>
+        </div>
+
+        <!-- SUBVIEW 3: WHAT-IF ADVERSARIAL MUTATION LAB -->
+        <div id="subview-mutation" class="dissector-subview">
+          <div class="mutation-container">
+            <div class="mutation-header">
+              <div>
+                <span class="mutation-title">ADVERSARIAL URL MUTATION &amp; DECISION BOUNDARY SIMULATOR</span>
+                <p class="mutation-desc">
+                  Interactively inject adversarial payloads, change TLDs, or simulate brand spoofing. Real-time client-side Shannon entropy and heuristic neural shifts are recalculated dynamically.
+                </p>
+              </div>
+              <button type="button" id="mutation-reset-btn" class="micro-btn">RESET TO ORIGINAL</button>
             </div>
-            <div class="metric-pill">
-              <span class="metric-lbl">SHANNON ENTROPY:</span>
-              <span id="inspector-entropy" class="metric-val">1.92</span>
+
+            <!-- Interactive Mutation Controls -->
+            <div class="mutation-controls-grid">
+              <!-- Protocol Switch -->
+              <div class="mutation-control-card">
+                <span class="ctrl-label">TRANSPORT PROTOCOL</span>
+                <div class="mutation-btn-group" id="mutation-proto-group">
+                  <button type="button" class="mut-chip active" data-proto="https">HTTPS (TLS)</button>
+                  <button type="button" class="mut-chip" data-proto="http">HTTP (CLEAR)</button>
+                </div>
+              </div>
+
+              <!-- Top-Level Domain Swapper -->
+              <div class="mutation-control-card">
+                <span class="ctrl-label">TOP-LEVEL DOMAIN (TLD)</span>
+                <div class="mutation-btn-group" id="mutation-tld-group">
+                  <button type="button" class="mut-chip active" data-tld=".com">.com</button>
+                  <button type="button" class="mut-chip" data-tld=".org">.org</button>
+                  <button type="button" class="mut-chip threat" data-tld=".tk">.tk</button>
+                  <button type="button" class="mut-chip threat" data-tld=".xyz">.xyz</button>
+                  <button type="button" class="mut-chip threat" data-tld=".top">.top</button>
+                  <button type="button" class="mut-chip threat" data-tld=".online">.online</button>
+                  <button type="button" class="mut-chip threat" data-tld=".cc">.cc</button>
+                </div>
+              </div>
+
+              <!-- Brand Impersonation Injector -->
+              <div class="mutation-control-card">
+                <span class="ctrl-label">INJECT DECEPTIVE BRAND PREFIX</span>
+                <div class="mutation-btn-group" id="mutation-brand-group">
+                  <button type="button" class="mut-chip active" data-brand="">NONE</button>
+                  <button type="button" class="mut-chip threat" data-brand="paypal-verify-">paypal-verify-</button>
+                  <button type="button" class="mut-chip threat" data-brand="login-apple-">login-apple-</button>
+                  <button type="button" class="mut-chip threat" data-brand="microsoft-auth-">microsoft-auth-</button>
+                  <button type="button" class="mut-chip threat" data-brand="security-update-">security-update-</button>
+                </div>
+              </div>
+
+              <!-- Query Parameter & Obfuscation Injector -->
+              <div class="mutation-control-card">
+                <span class="ctrl-label">DECEPTIVE QUERY / PATH INJECTION</span>
+                <div class="mutation-btn-group" id="mutation-query-group">
+                  <button type="button" class="mut-chip active" data-query="">NONE</button>
+                  <button type="button" class="mut-chip threat" data-query="/auth/login.php">/auth/login.php</button>
+                  <button type="button" class="mut-chip threat" data-query="?token=0x3f9e8a7bc">?token=0x3f...</button>
+                  <button type="button" class="mut-chip threat" data-query="?redirect=https://evil.com">?redirect=...</button>
+                  <button type="button" class="mut-chip threat" data-query="@malicious-host.net">@user:pass@</button>
+                </div>
+              </div>
             </div>
-            <div class="metric-pill">
-              <span class="metric-lbl">SECURITY TAG:</span>
-              <span id="inspector-tag" class="metric-val">TLS-ENCRYPTED</span>
+
+            <!-- Mutated URL Preview -->
+            <div class="mutated-url-box">
+              <span class="mutated-url-label">SIMULATED MUTATED URL:</span>
+              <code id="mutated-url-val" class="mutated-url-val">https://example.com</code>
+            </div>
+
+            <!-- Live Client-Side Recalculated Threat Telemetry -->
+            <div class="mutation-telemetry-row">
+              <div class="mut-metric-card">
+                <span class="mut-lbl">SIMULATED RISK:</span>
+                <strong id="mutation-risk-score" class="mut-val safe">1.2%</strong>
+              </div>
+              <div class="mut-metric-card">
+                <span class="mut-lbl">RISK DELTA (&Delta;):</span>
+                <strong id="mutation-risk-delta" class="mut-val clean">+0.0%</strong>
+              </div>
+              <div class="mut-metric-card">
+                <span class="mut-lbl">SHANNON ENTROPY:</span>
+                <strong id="mutation-entropy-val" class="mut-val">2.84</strong>
+              </div>
+              <div class="mut-metric-card">
+                <span class="mut-lbl">TOTAL LENGTH:</span>
+                <strong id="mutation-len-val" class="mut-val">24 chars</strong>
+              </div>
+              <div class="mut-action-col">
+                <button type="button" id="mutation-audit-btn" class="submit-btn mini">
+                  <span>AUDIT MUTATED TARGET ↗</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBVIEW 4: SHANNON ENTROPY WAVEFORM -->
+        <div id="subview-entropy" class="dissector-subview">
+          <div class="entropy-container">
+            <div class="entropy-header">
+              <div>
+                <span class="entropy-title">SLIDING-WINDOW INFORMATIONAL ENTROPY CONTOUR (WINDOW = 6 CHARS)</span>
+                <p class="entropy-desc">
+                  Measures information density and algorithmic randomness across URI tokens. Phishing links frequently show high entropy spikes (&gt;3.8 bits) in obfuscated hash tokens and credential harvesting parameters.
+                </p>
+              </div>
+              <div class="entropy-stats-pill">
+                <span>MEAN: <strong id="entropy-mean-val">0.00</strong></span>
+                <span class="pill-sep">&bull;</span>
+                <span>PEAK: <strong id="entropy-peak-val">0.00</strong></span>
+              </div>
+            </div>
+
+            <!-- SVG Waveform -->
+            <div class="entropy-svg-wrap">
+              <svg id="entropy-svg" class="entropy-svg" viewBox="0 0 840 220" aria-label="Entropy Waveform Chart">
+                <!-- Dynamically generated by app.js -->
+              </svg>
+            </div>
+
+            <!-- Anomaly Spike Region List -->
+            <div class="entropy-spikes-wrap">
+              <div class="spikes-header">
+                <span>HIGH ENTROPY ANOMALY REGIONS (&gt; 3.8 BITS / CHAR):</span>
+                <span id="entropy-spikes-count" class="micro-badge">0 SPIKES</span>
+              </div>
+              <div id="entropy-spikes-list" class="spikes-list">
+                <!-- Dynamically populated by app.js -->
+              </div>
             </div>
           </div>
         </div>
@@ -502,6 +731,49 @@
         </ul>
       </div>
 
+      <!-- 06 // INCIDENT RESPONSE & SOC RULE GENERATOR -->
+      <div class="soc-ir-section">
+        <div class="soc-ir-header">
+          <div>
+            <span class="section-tag">06 // INCIDENT RESPONSE CONTAINMENT</span>
+            <h3 class="soc-ir-title">Automated SOC Defense &amp; Threat Ingestion Rules</h3>
+          </div>
+          <div class="soc-ir-tabs" role="tablist" aria-label="SOC Rule Formats">
+            <button type="button" class="soc-tab active" data-format="suricata">SURICATA IDS</button>
+            <button type="button" class="soc-tab" data-format="snort">SNORT 3</button>
+            <button type="button" class="soc-tab" data-format="pihole">PI-HOLE DNS</button>
+            <button type="button" class="soc-tab" data-format="hosts">/ETC/HOSTS</button>
+            <button type="button" class="soc-tab" data-format="stix">STIX 2.1 CTI</button>
+            <button type="button" class="soc-tab" data-format="sigma">SIGMA SIEM</button>
+          </div>
+        </div>
+
+        <div class="soc-ir-card">
+          <div class="soc-code-header">
+            <span id="soc-format-label" class="soc-format-badge">SURICATA IDS RULE</span>
+            <div class="soc-btn-group">
+              <button type="button" id="soc-copy-btn" class="micro-btn">COPY RULE</button>
+              <button type="button" id="soc-download-btn" class="micro-btn">DOWNLOAD ARTIFACT</button>
+            </div>
+          </div>
+          <pre><code id="soc-code-viewer" class="soc-code"></code></pre>
+        </div>
+      </div>
+
+      <!-- 07 // MITRE ATT&CK TACTICAL MAPPING -->
+      <div id="mitre-section" class="mitre-section">
+        <div class="mitre-header">
+          <div>
+            <span class="section-tag">07 // TACTICAL ATTRIBUTION</span>
+            <h3 class="mitre-heading">MITRE ATT&amp;CK&reg; Enterprise Matrix Mapping</h3>
+          </div>
+          <span id="mitre-match-count" class="micro-badge">0 TECHNIQUES MATCHED</span>
+        </div>
+        <div id="mitre-grid" class="mitre-grid">
+          <!-- Dynamically populated by MitreMapper in app.js -->
+        </div>
+      </div>
+
       <!-- RAW JSON TELEMETRY DRAWER TOGGLE -->
       <div class="raw-telemetry-toggle-wrap">
         <button type="button" id="toggle-json-btn" class="outline-btn">
@@ -620,7 +892,308 @@
     </div>
   </div>
 
-  <!-- TOAST NOTIFICATION -->
+  <!-- BATCH MULTI-URL BULK INGESTION MODAL -->
+  <div id="batch-modal" class="batch-modal" hidden aria-modal="true" role="dialog" aria-labelledby="batch-modal-title">
+    <div class="batch-backdrop" id="batch-backdrop"></div>
+    <div class="batch-dialog">
+      <div class="batch-dialog-header">
+        <div class="batch-title-group">
+          <span class="section-tag-inline">BULK TRIAGE SYSTEM</span>
+          <h3 id="batch-modal-title" class="batch-heading">BATCH LINK INGESTION &amp; THREAT MATRIX</h3>
+        </div>
+        <button type="button" id="batch-close-btn" class="batch-close" aria-label="Close modal">✕</button>
+      </div>
+
+      <p class="batch-explainer">
+        Audit up to 50 URLs in parallel with client-side async stream processing, live progress metrics, SVG threat distribution donut chart, and 1-click SOC blocklist export.
+      </p>
+
+      <!-- BATCH INPUT CONSOLE -->
+      <div class="batch-input-area">
+        <div class="batch-input-top">
+          <label for="batch-textarea" class="batch-input-label">
+            &gt; PASTE URL LIST, LOG SNIPPET, OR DROP .TXT / .CSV FILE (ONE PER LINE OR EXTRACTED VIA REGEX)
+          </label>
+          <div class="batch-presets-group">
+            <button type="button" id="batch-sample-threats" class="micro-btn">SAMPLE PHISHING CAMPAIGN</button>
+            <button type="button" id="batch-sample-mixed" class="micro-btn">SAMPLE MIXED LOG</button>
+            <button type="button" id="batch-clear-btn" class="micro-btn">CLEAR</button>
+          </div>
+        </div>
+
+        <textarea
+          id="batch-textarea"
+          class="batch-textarea"
+          rows="5"
+          placeholder="https://example.com&#10;http://paypal-verification-account-update.tk/login&#10;http://login-apple-security.com/signin"
+          spellcheck="false"
+        ></textarea>
+
+        <div class="batch-action-bar">
+          <div class="batch-file-dropzone" id="batch-dropzone">
+            <span class="dropzone-mini-text">DRAG &amp; DROP .TXT/.CSV LOG HERE (OR CLICK TO BROWSE)</span>
+            <input type="file" id="batch-file-input" accept=".txt,.csv,.log" hidden>
+          </div>
+          <div class="batch-buttons">
+            <button type="button" id="batch-start-btn" class="submit-btn mini">
+              <span>EXECUTE BATCH AUDIT</span>
+              <span class="btn-glyph" aria-hidden="true">↗</span>
+            </button>
+            <button type="button" id="batch-cancel-btn" class="outline-btn mini" hidden>
+              <span>CANCEL AUDIT</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIVE STREAMING PROGRESS TELEMETRY -->
+      <div id="batch-telemetry-panel" class="batch-telemetry-panel" hidden>
+        <div class="batch-progress-header">
+          <div class="batch-progress-status">
+            <span class="hud-spinner mini" aria-hidden="true" id="batch-spinner"></span>
+            <span id="batch-status-text">PROCESSING URL 0 / 0</span>
+          </div>
+          <div class="batch-stats-strip">
+            <span>SPEED: <strong id="batch-speed-val">0.0</strong> URLs/s</span>
+            <span class="pill-sep">&bull;</span>
+            <span>THREAT RATIO: <strong id="batch-threat-ratio">0.0%</strong></span>
+            <span class="pill-sep">&bull;</span>
+            <span>ELAPSED: <strong id="batch-elapsed-val">0.0s</strong></span>
+          </div>
+        </div>
+        <div class="batch-bar-track">
+          <div id="batch-bar-fill" class="batch-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- BATCH RESULTS DISPLAY -->
+      <div id="batch-results-panel" class="batch-results-panel" hidden>
+        <!-- DONUT & SUMMARY STRIP -->
+        <div class="batch-summary-row">
+          <div class="batch-donut-wrap">
+            <svg id="batch-donut-svg" class="batch-donut-svg" viewBox="0 0 160 160" aria-label="Batch Threat Donut">
+              <!-- Dynamically generated SVG by app.js -->
+            </svg>
+            <div class="batch-donut-center">
+              <strong id="batch-donut-center-num">0</strong>
+              <span>TARGETS</span>
+            </div>
+          </div>
+
+          <div class="batch-legend-grid">
+            <div class="batch-legend-card danger" id="filter-danger-btn" role="button" tabindex="0">
+              <span class="legend-card-title">DANGEROUS</span>
+              <strong id="batch-count-danger" class="legend-card-count">0</strong>
+              <span class="legend-card-sub">CRITICAL THREAT</span>
+            </div>
+            <div class="batch-legend-card warning" id="filter-warning-btn" role="button" tabindex="0">
+              <span class="legend-card-title">WARNING</span>
+              <strong id="batch-count-warning" class="legend-card-count">0</strong>
+              <span class="legend-card-sub">ELEVATED ANOMALIES</span>
+            </div>
+            <div class="batch-legend-card caution" id="filter-caution-btn" role="button" tabindex="0">
+              <span class="legend-card-title">CAUTION</span>
+              <strong id="batch-count-caution" class="legend-card-count">0</strong>
+              <span class="legend-card-sub">MODERATE / UNVERIFIED</span>
+            </div>
+            <div class="batch-legend-card safe" id="filter-safe-btn" role="button" tabindex="0">
+              <span class="legend-card-title">SAFE</span>
+              <strong id="batch-count-safe" class="legend-card-count">0</strong>
+              <span class="legend-card-sub">BENIGN / VERIFIED</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TRIAGE DATA TABLE CONTROLS -->
+        <div class="batch-table-toolbar">
+          <div class="batch-filter-tabs">
+            <button type="button" class="tbl-filter-tab active" data-filter="all">ALL (<span id="tab-cnt-all">0</span>)</button>
+            <button type="button" class="tbl-filter-tab" data-filter="danger">DANGER (<span id="tab-cnt-danger">0</span>)</button>
+            <button type="button" class="tbl-filter-tab" data-filter="warning">WARNING (<span id="tab-cnt-warning">0</span>)</button>
+            <button type="button" class="tbl-filter-tab" data-filter="caution">CAUTION (<span id="tab-cnt-caution">0</span>)</button>
+            <button type="button" class="tbl-filter-tab" data-filter="safe">SAFE (<span id="tab-cnt-safe">0</span>)</button>
+          </div>
+          <div class="batch-table-search">
+            <input type="text" id="batch-table-search-input" placeholder="Filter by domain or keyword..." spellcheck="false">
+          </div>
+          <div class="batch-export-group">
+            <button type="button" id="batch-export-csv" class="micro-btn">EXPORT CSV</button>
+            <button type="button" id="batch-export-json" class="micro-btn">EXPORT JSON</button>
+            <button type="button" id="batch-export-blocklist" class="micro-btn highlight">EXPORT BLOCKLIST</button>
+          </div>
+        </div>
+
+        <!-- TRIAGE DATA TABLE -->
+        <div class="batch-table-wrap">
+          <table class="batch-table">
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>TARGET URL / DOMAIN</th>
+                <th style="width: 140px;">VERDICT</th>
+                <th style="width: 120px;">PHISH SCORE</th>
+                <th>PRIMARY ATTRIBUTION SIGNAL</th>
+                <th style="width: 110px;">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="batch-table-body">
+              <!-- Dynamically populated by app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUDIT SESSION HISTORY DRAWER -->
+  <div id="history-drawer" class="history-drawer" hidden aria-label="Audit Session History">
+    <div class="history-backdrop" id="history-backdrop"></div>
+    <div class="history-panel">
+      <div class="history-header">
+        <div class="history-title-group">
+          <span class="section-tag-inline">LOCAL ZERO-EGRESS CACHE</span>
+          <h3 class="history-title">SESSION AUDIT LOG</h3>
+        </div>
+        <button type="button" id="history-close-btn" class="batch-close" aria-label="Close history drawer">✕</button>
+      </div>
+
+      <div class="history-toolbar">
+        <span class="history-hint">Select 2 audits to compare side-by-side:</span>
+        <div class="history-actions">
+          <button type="button" id="history-compare-btn" class="micro-btn highlight" disabled>COMPARE (0/2)</button>
+          <button type="button" id="history-clear-btn" class="micro-btn">CLEAR</button>
+        </div>
+      </div>
+
+      <div class="history-list-scroll">
+        <ul id="history-list" class="history-items-list">
+          <!-- Dynamically populated by app.js -->
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDE-BY-SIDE AUDIT DIFF COMPARATOR MODAL -->
+  <div id="diff-modal" class="diff-modal" hidden aria-modal="true" role="dialog" aria-labelledby="diff-modal-title">
+    <div class="diff-backdrop" id="diff-backdrop"></div>
+    <div class="diff-dialog">
+      <div class="diff-header">
+        <div class="diff-title-group">
+          <span class="section-tag-inline">DIFFERENTIAL FORENSICS</span>
+          <h3 id="diff-modal-title" class="diff-title">SIDE-BY-SIDE AUDIT COMPARATOR</h3>
+        </div>
+        <button type="button" id="diff-close-btn" class="batch-close" aria-label="Close diff modal">✕</button>
+      </div>
+
+      <div class="diff-delta-banner">
+        <div class="diff-delta-metric">
+          <span class="delta-lbl">RISK DELTA GAUGE (&Delta;):</span>
+          <strong id="diff-delta-score" class="delta-val">+0.0%</strong>
+        </div>
+        <div class="diff-delta-metric">
+          <span class="delta-lbl">NEURAL LOGIT GAP:</span>
+          <strong id="diff-delta-logit" class="delta-val">0.00</strong>
+        </div>
+        <div class="diff-delta-metric">
+          <span class="delta-lbl">ENTROPY VARIANCE:</span>
+          <strong id="diff-delta-entropy" class="delta-val">0.00</strong>
+        </div>
+      </div>
+
+      <div class="diff-columns-grid">
+        <!-- TARGET A -->
+        <div class="diff-column" id="diff-col-a">
+          <div class="diff-col-head">
+            <span class="diff-tag">TARGET A</span>
+            <span id="diff-pill-a" class="verdict-pill mini safe">SAFE</span>
+          </div>
+          <code id="diff-url-a" class="diff-url">https://...</code>
+          <div class="diff-metrics-grid" id="diff-metrics-a">
+            <!-- Dynamically generated -->
+          </div>
+          <div class="diff-signals-box">
+            <span class="diff-subheading">ACTIVE SIGNALS:</span>
+            <ul id="diff-signals-a" class="diff-signals-list"></ul>
+          </div>
+        </div>
+
+        <!-- TARGET B -->
+        <div class="diff-column" id="diff-col-b">
+          <div class="diff-col-head">
+            <span class="diff-tag">TARGET B</span>
+            <span id="diff-pill-b" class="verdict-pill mini danger">DANGEROUS</span>
+          </div>
+          <code id="diff-url-b" class="diff-url">http://...</code>
+          <div class="diff-metrics-grid" id="diff-metrics-b">
+            <!-- Dynamically generated -->
+          </div>
+          <div class="diff-signals-box">
+            <span class="diff-subheading">ACTIVE SIGNALS:</span>
+            <ul id="diff-signals-b" class="diff-signals-list"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- BENCHMARK VALIDATION MODAL -->
+  <div id="benchmark-modal" class="batch-modal" hidden aria-modal="true" role="dialog" aria-labelledby="benchmark-modal-title">
+    <div class="batch-backdrop" id="benchmark-backdrop"></div>
+    <div class="batch-dialog" style="max-width: 820px;">
+      <div class="batch-dialog-header">
+        <div class="batch-title-group">
+          <span class="section-tag-inline">ADVERSARIAL BENCHMARK</span>
+          <h3 id="benchmark-modal-title" class="batch-heading">ZERO-TRUST MODEL VALIDATION SUITE</h3>
+        </div>
+        <button type="button" id="benchmark-close-btn" class="batch-close" aria-label="Close modal">✕</button>
+      </div>
+      <p class="batch-explainer">
+        Validates client-side and neural decision boundaries against 12 reference adversarial samples and benign anchors. Runs completely local with zero external egress.
+      </p>
+      <div class="benchmark-controls-bar">
+        <button type="button" id="run-benchmark-btn" class="submit-btn mini">
+          <span>RUN VALIDATION SUITE</span>
+          <span class="btn-glyph">⚡</span>
+        </button>
+        <span id="benchmark-status" class="benchmark-status">AWAITING EXECUTION</span>
+      </div>
+      <div id="benchmark-results" class="benchmark-results" hidden>
+        <div class="benchmark-metrics-grid">
+          <div class="mut-metric-card">
+            <span class="mut-lbl">BENCHMARK ACCURACY:</span>
+            <strong id="bm-accuracy" class="mut-val safe">98.3%</strong>
+          </div>
+          <div class="mut-metric-card">
+            <span class="mut-lbl">F1-SCORE:</span>
+            <strong id="bm-f1" class="mut-val">0.982</strong>
+          </div>
+          <div class="mut-metric-card">
+            <span class="mut-lbl">TRUE POSITIVES (TP):</span>
+            <strong id="bm-tp" class="mut-val threat">6/6</strong>
+          </div>
+          <div class="mut-metric-card">
+            <span class="mut-lbl">TRUE NEGATIVES (TN):</span>
+            <strong id="bm-tn" class="mut-val safe">6/6</strong>
+          </div>
+        </div>
+        <div class="benchmark-table-wrap">
+          <table class="batch-table">
+            <thead>
+              <tr>
+                <th>TEST VECTOR</th>
+                <th>TARGET HOST</th>
+                <th>EXPECTED</th>
+                <th>VERDICT</th>
+                <th>LATENCY</th>
+                <th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody id="benchmark-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite" hidden>
     <span class="toast-indicator">■</span>
     <span id="toast-message" class="toast-message">COPIED TO CLIPBOARD</span>
