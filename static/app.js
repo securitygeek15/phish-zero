@@ -4681,6 +4681,12 @@ const TacticalKeyboardShortcuts = (() => {
         if (typeof openQuishModal === "function") openQuishModal();
       }
 
+      // Shift + T: Toggle Light / Dark Mode
+      if (e.shiftKey && (e.key === "T" || e.key === "t")) {
+        e.preventDefault();
+        if (typeof ThemeManager !== "undefined") ThemeManager.toggle();
+      }
+
       // Shift + 1 to 4: Switch Forensic Dissector Subtabs
       if (e.shiftKey && e.key === "1") {
         const t = document.querySelector("#subtab-deconstruct");
@@ -4701,4 +4707,98 @@ const TacticalKeyboardShortcuts = (() => {
   init();
 
   return { init };
+})();
+
+// ==========================================================================
+// 21 // THEME MANAGER: DUAL LIGHT & DARK MODE CONTROLLER
+// System preference detection, localStorage persistence & canvas redraw sync
+// ==========================================================================
+const ThemeManager = (() => {
+  const STORAGE_KEY = "phish_zero_theme";
+  const toggleBtn = document.querySelector("#theme-toggle-btn");
+  const themeIcon = document.querySelector("#theme-icon");
+  const themeText = document.querySelector("#theme-text");
+
+  function getSavedTheme() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved === "light" || saved === "dark") return saved;
+    } catch {
+      // Storage unavailable
+    }
+    const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+    return prefersLight ? "light" : "dark";
+  }
+
+  function applyTheme(theme, save = true) {
+    const isLight = theme === "light";
+    document.documentElement.setAttribute("data-theme", isLight ? "light" : "dark");
+    document.documentElement.classList.toggle("theme-light", isLight);
+    document.body.classList.toggle("theme-light", isLight);
+
+    if (themeIcon) {
+      themeIcon.textContent = isLight ? "🌙" : "☀️";
+    }
+    if (themeText) {
+      themeText.textContent = isLight ? "dark" : "light";
+    }
+
+    if (toggleBtn) {
+      toggleBtn.title = isLight
+        ? "Switch to Dark Mode (Press Shift+T)"
+        : "Switch to Light Mode (Press Shift+T)";
+      toggleBtn.setAttribute("aria-label", toggleBtn.title);
+    }
+
+    if (save) {
+      try {
+        localStorage.setItem(STORAGE_KEY, theme);
+      } catch {
+        // LocalStorage safety
+      }
+    }
+
+    // Synchronize canvas diffs & waveforms if report is visible
+    if (typeof HomoglyphMatrix !== "undefined" && currentReportData) {
+      HomoglyphMatrix.refreshCanvas();
+    }
+    if (typeof EntropyVisualizer !== "undefined" && currentReportData && currentReportData.url) {
+      EntropyVisualizer.render(currentReportData.url);
+    }
+  }
+
+  function toggle() {
+    const current = document.documentElement.getAttribute("data-theme") || "dark";
+    const next = current === "light" ? "dark" : "light";
+    applyTheme(next, true);
+    showToast(`THEME SWITCHED TO ${next.toUpperCase()} MODE`);
+  }
+
+  function init() {
+    const initialTheme = getSavedTheme();
+    applyTheme(initialTheme, false);
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", () => {
+        toggle();
+      });
+    }
+
+    // Listen for OS system theme changes if user hasn't explicitly set a preference
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", (e) => {
+        try {
+          if (!localStorage.getItem(STORAGE_KEY)) {
+            applyTheme(e.matches ? "light" : "dark", false);
+          }
+        } catch {
+          applyTheme(e.matches ? "light" : "dark", false);
+        }
+      });
+    }
+  }
+
+  init();
+
+  return { getSavedTheme, applyTheme, toggle };
 })();

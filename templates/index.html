@@ -13,6 +13,19 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4.0">
+  <script>
+    (function() {
+      try {
+        const saved = localStorage.getItem("phish_zero_theme");
+        const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        const theme = saved || (prefersLight ? "light" : "dark");
+        document.documentElement.setAttribute("data-theme", theme);
+        if (theme === "light") {
+          document.documentElement.classList.add("theme-light");
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body class="theme-monochrome">
   <div class="ambient-grid" aria-hidden="true"></div>
@@ -29,6 +42,10 @@
       </div>
 
       <div class="nav-telemetry">
+        <button type="button" id="theme-toggle-btn" class="glass-pill-btn" title="Toggle Light / Dark Mode (Press Shift+T)" aria-label="Toggle Light or Dark Mode">
+          <span id="theme-icon" class="pill-icon">☀️</span>
+          <span id="theme-text">light</span>
+        </button>
         <button type="button" id="nav-batch-btn" class="glass-pill-btn" title="Batch Multi-URL Ingestion & Triage">
           <span class="pill-icon">📦</span>
           <span>batch audit</span>
