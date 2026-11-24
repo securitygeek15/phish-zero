@@ -306,11 +306,6 @@ function renderForensicReport(data) {
     renderGraphAnalyzer(data.graph_data, threatLevel);
   }
 
-  // 3. Render Explainable AI (XAI) Attribution Lens
-  if (data.xai) {
-    renderXaiExplainer(data.xai, threatLevel);
-  }
-
   // Evidence Ledger
   renderFindings(data.findings || []);
 
@@ -482,6 +477,8 @@ graphTabs.forEach((tab) => {
 function renderRadarChart(vectors, threatLevel = "safe") {
   radarSvg.replaceChildren();
 
+  const isLight = document.documentElement.getAttribute("data-theme") === "light";
+
   const cx = 230;
   const cy = 190;
   const radius = 125;
@@ -502,8 +499,8 @@ function renderRadarChart(vectors, threatLevel = "safe") {
     }
     const polygon = document.createElementNS(ns, "polygon");
     polygon.setAttribute("points", ringPts.join(" "));
-    polygon.setAttribute("fill", level === 1.0 ? "rgba(255, 255, 255, 0.02)" : "none");
-    polygon.setAttribute("stroke", "rgba(255, 255, 255, 0.12)");
+    polygon.setAttribute("fill", level === 1.0 ? (isLight ? "rgba(15, 23, 42, 0.02)" : "rgba(255, 255, 255, 0.02)") : "none");
+    polygon.setAttribute("stroke", isLight ? "rgba(15, 23, 42, 0.18)" : "rgba(255, 255, 255, 0.12)");
     polygon.setAttribute("stroke-width", "1");
     if (level === 0.5) {
       polygon.setAttribute("stroke-dasharray", "3,3");
@@ -514,9 +511,10 @@ function renderRadarChart(vectors, threatLevel = "safe") {
     const text = document.createElementNS(ns, "text");
     text.setAttribute("x", cx + 4);
     text.setAttribute("y", cy - (radius * level) - 3);
-    text.setAttribute("fill", "rgba(255, 255, 255, 0.25)");
+    text.setAttribute("fill", isLight ? "rgba(15, 23, 42, 0.55)" : "rgba(255, 255, 255, 0.25)");
     text.setAttribute("font-family", "JetBrains Mono, monospace");
     text.setAttribute("font-size", "8");
+    text.setAttribute("font-weight", "600");
     text.textContent = `${Math.round(level * 100)}%`;
     radarSvg.appendChild(text);
   });
@@ -524,10 +522,10 @@ function renderRadarChart(vectors, threatLevel = "safe") {
   // 4-Tier Theme Color Palette:
   // Red (danger), Yellow (warning), Blue (caution), Green (safe)
   const themePalette = {
-    danger: { stroke: "#ef4444", fill: "rgba(239, 68, 68, 0.24)", ping: "rgba(239, 68, 68, 0.7)", dot: "#ef4444" },
-    warning: { stroke: "#f59e0b", fill: "rgba(245, 158, 11, 0.24)", ping: "rgba(245, 158, 11, 0.7)", dot: "#f59e0b" },
-    caution: { stroke: "#3b82f6", fill: "rgba(59, 130, 246, 0.24)", ping: "rgba(59, 130, 246, 0.7)", dot: "#60a5fa" },
-    safe: { stroke: "#10b981", fill: "rgba(16, 185, 129, 0.24)", ping: "rgba(16, 185, 129, 0.7)", dot: "#10b981" },
+    danger: { stroke: "#ef4444", fill: isLight ? "rgba(239, 68, 68, 0.20)" : "rgba(239, 68, 68, 0.24)", ping: "rgba(239, 68, 68, 0.7)", dot: "#ef4444" },
+    warning: { stroke: isLight ? "#d97706" : "#f59e0b", fill: isLight ? "rgba(217, 119, 6, 0.20)" : "rgba(245, 158, 11, 0.24)", ping: "rgba(245, 158, 11, 0.7)", dot: isLight ? "#d97706" : "#f59e0b" },
+    caution: { stroke: isLight ? "#2563eb" : "#3b82f6", fill: isLight ? "rgba(37, 99, 235, 0.20)" : "rgba(59, 130, 246, 0.24)", ping: "rgba(59, 130, 246, 0.7)", dot: isLight ? "#2563eb" : "#60a5fa" },
+    safe: { stroke: isLight ? "#059669" : "#10b981", fill: isLight ? "rgba(5, 150, 105, 0.20)" : "rgba(16, 185, 129, 0.24)", ping: "rgba(16, 185, 129, 0.7)", dot: isLight ? "#059669" : "#10b981" },
   };
   const theme = themePalette[threatLevel] || themePalette.safe;
 
@@ -544,7 +542,7 @@ function renderRadarChart(vectors, threatLevel = "safe") {
     spoke.setAttribute("y1", cy);
     spoke.setAttribute("x2", ax);
     spoke.setAttribute("y2", ay);
-    spoke.setAttribute("stroke", "rgba(255, 255, 255, 0.15)");
+    spoke.setAttribute("stroke", isLight ? "rgba(15, 23, 42, 0.18)" : "rgba(255, 255, 255, 0.15)");
     spoke.setAttribute("stroke-width", "1");
     radarSvg.appendChild(spoke);
 
@@ -563,10 +561,11 @@ function renderRadarChart(vectors, threatLevel = "safe") {
     labelText.setAttribute("x", lx);
     labelText.setAttribute("y", ly + 4);
     labelText.setAttribute("text-anchor", Math.abs(Math.cos(angle)) < 0.2 ? "middle" : (Math.cos(angle) > 0 ? "start" : "end"));
-    labelText.setAttribute("fill", v.status === "critical" ? "#ef4444" : (v.status === "warning" ? "#f59e0b" : "rgba(255, 255, 255, 0.65)"));
+    const defaultLabelColor = isLight ? "#0f172a" : "rgba(255, 255, 255, 0.65)";
+    labelText.setAttribute("fill", v.status === "critical" ? "#ef4444" : (v.status === "warning" ? (isLight ? "#d97706" : "#f59e0b") : defaultLabelColor));
     labelText.setAttribute("font-family", "JetBrains Mono, monospace");
     labelText.setAttribute("font-size", "9");
-    labelText.setAttribute("font-weight", v.status === "critical" ? "700" : "500");
+    labelText.setAttribute("font-weight", (v.status === "critical" || isLight) ? "700" : "500");
     labelText.textContent = v.name;
     radarSvg.appendChild(labelText);
   });
@@ -599,8 +598,8 @@ function renderRadarChart(vectors, threatLevel = "safe") {
     dot.setAttribute("cx", pt.x);
     dot.setAttribute("cy", pt.y);
     dot.setAttribute("r", isCrit ? "4" : "3");
-    dot.setAttribute("fill", isCrit ? theme.dot : (pt.vector.status === "warning" ? "#f59e0b" : (pt.vector.status === "caution" ? "#3b82f6" : "#10b981")));
-    dot.setAttribute("stroke", "#09090b");
+    dot.setAttribute("fill", isCrit ? theme.dot : (pt.vector.status === "warning" ? (isLight ? "#d97706" : "#f59e0b") : (pt.vector.status === "caution" ? (isLight ? "#2563eb" : "#3b82f6") : (isLight ? "#059669" : "#10b981"))));
+    dot.setAttribute("stroke", isLight ? "#ffffff" : "#09090b");
     dot.setAttribute("stroke-width", "1.5");
     dot.style.cursor = "pointer";
 
@@ -671,6 +670,7 @@ function renderTopologyChart(topology) {
   const nodes = topology.nodes || [];
   if (nodes.length === 0) return;
 
+  const isLight = document.documentElement.getAttribute("data-theme") === "light";
   const ns = "http://www.w3.org/2000/svg";
   const width = 840;
   const height = 220;
@@ -688,7 +688,7 @@ function renderTopologyChart(topology) {
 
   const path = document.createElementNS(ns, "path");
   path.setAttribute("d", "M 0 1.5 L 8 5 L 0 8.5 z");
-  path.setAttribute("fill", "rgba(255, 255, 255, 0.45)");
+  path.setAttribute("fill", isLight ? "rgba(15, 23, 42, 0.45)" : "rgba(255, 255, 255, 0.45)");
   marker.appendChild(path);
   defs.appendChild(marker);
   topologySvg.appendChild(defs);
@@ -726,7 +726,7 @@ function renderTopologyChart(topology) {
     line.setAttribute("y2", to.cy);
     const arrowColor = to.node.status === "critical"
       ? "#ef4444"
-      : (to.node.status === "warning" ? "#f59e0b" : "rgba(255, 255, 255, 0.25)");
+      : (to.node.status === "warning" ? (isLight ? "#d97706" : "#f59e0b") : (isLight ? "rgba(15, 23, 42, 0.22)" : "rgba(255, 255, 255, 0.25)"));
     line.setAttribute("stroke", arrowColor);
     line.setAttribute("stroke-width", to.node.status === "critical" ? "2" : "1.2");
     if (to.node.is_lure || from.node.is_lure) {
@@ -738,10 +738,10 @@ function renderTopologyChart(topology) {
 
   // Draw Node Cards
   const nodeColorMap = {
-    critical: { stroke: "#ef4444", fill: "rgba(239, 68, 68, 0.08)", accent: "#ef4444" },
-    warning: { stroke: "#f59e0b", fill: "rgba(245, 158, 11, 0.08)", accent: "#f59e0b" },
-    caution: { stroke: "#3b82f6", fill: "rgba(59, 130, 246, 0.08)", accent: "#3b82f6" },
-    clean: { stroke: "#10b981", fill: "rgba(16, 185, 129, 0.08)", accent: "#10b981" },
+    critical: { stroke: "#ef4444", fill: isLight ? "rgba(239, 68, 68, 0.08)" : "rgba(239, 68, 68, 0.08)", accent: "#ef4444" },
+    warning: { stroke: isLight ? "#d97706" : "#f59e0b", fill: isLight ? "rgba(217, 119, 6, 0.08)" : "rgba(245, 158, 11, 0.08)", accent: isLight ? "#d97706" : "#f59e0b" },
+    caution: { stroke: isLight ? "#2563eb" : "#3b82f6", fill: isLight ? "rgba(37, 99, 235, 0.08)" : "rgba(59, 130, 246, 0.08)", accent: isLight ? "#2563eb" : "#3b82f6" },
+    clean: { stroke: isLight ? "#059669" : "#10b981", fill: isLight ? "rgba(5, 150, 105, 0.08)" : "rgba(16, 185, 129, 0.08)", accent: isLight ? "#059669" : "#10b981" },
   };
 
   nodePositions.forEach((pos) => {
@@ -749,9 +749,9 @@ function renderTopologyChart(topology) {
     g.style.cursor = "pointer";
 
     const nodeTheme = nodeColorMap[pos.node.status] || {
-      stroke: "rgba(255, 255, 255, 0.18)",
-      fill: "#09090b",
-      accent: "rgba(255, 255, 255, 0.25)",
+      stroke: isLight ? "rgba(15, 23, 42, 0.16)" : "rgba(255, 255, 255, 0.18)",
+      fill: isLight ? "#ffffff" : "#09090b",
+      accent: isLight ? "rgba(15, 23, 42, 0.25)" : "rgba(255, 255, 255, 0.25)",
     };
 
     // Card background rect
@@ -780,7 +780,7 @@ function renderTopologyChart(topology) {
     const step = document.createElementNS(ns, "text");
     step.setAttribute("x", pos.x + 10);
     step.setAttribute("y", pos.y + 16);
-    step.setAttribute("fill", "rgba(255, 255, 255, 0.4)");
+    step.setAttribute("fill", isLight ? "rgba(15, 23, 42, 0.55)" : "rgba(255, 255, 255, 0.4)");
     step.setAttribute("font-family", "JetBrains Mono, monospace");
     step.setAttribute("font-size", "8");
     step.setAttribute("font-weight", "600");
@@ -791,7 +791,7 @@ function renderTopologyChart(topology) {
     const label = document.createElementNS(ns, "text");
     label.setAttribute("x", pos.x + 10);
     label.setAttribute("y", pos.y + 36);
-    label.setAttribute("fill", pos.node.status === "critical" ? "#ffffff" : "#ededed");
+    label.setAttribute("fill", pos.node.status === "critical" ? "#ef4444" : (isLight ? "#0f172a" : "#ededed"));
     label.setAttribute("font-family", "JetBrains Mono, monospace");
     label.setAttribute("font-size", "11");
     label.setAttribute("font-weight", "700");
@@ -802,7 +802,7 @@ function renderTopologyChart(topology) {
     const sub = document.createElementNS(ns, "text");
     sub.setAttribute("x", pos.x + 10);
     sub.setAttribute("y", pos.y + 54);
-    sub.setAttribute("fill", "rgba(255, 255, 255, 0.5)");
+    sub.setAttribute("fill", isLight ? "rgba(15, 23, 42, 0.65)" : "rgba(255, 255, 255, 0.5)");
     sub.setAttribute("font-family", "Inter, sans-serif");
     sub.setAttribute("font-size", "8");
     sub.textContent = pos.node.sub;
@@ -892,189 +892,6 @@ function renderFindings(findings) {
   }
 }
 
-// ==========================================
-// 04 // EXPLAINABLE AI (XAI) ATTRIBUTION LENS
-// ==========================================
-function renderXaiExplainer(xai, threatLevel) {
-  const xaiSection = document.querySelector("#xai-section");
-  if (!xaiSection || !xai || xai.status !== "ready") return;
-
-  // 1. Narrative text
-  const narrativeEl = document.querySelector("#xai-narrative-text");
-  if (narrativeEl) {
-    narrativeEl.textContent = xai.narrative;
-  }
-
-  // 2. Character Heatmap Stream
-  const heatmapStream = document.querySelector("#xai-heatmap-stream");
-  const hoverChar = document.querySelector("#xai-hover-char");
-  const hoverToken = document.querySelector("#xai-hover-token");
-  const hoverImpact = document.querySelector("#xai-hover-impact");
-  const hoverIntensity = document.querySelector("#xai-hover-intensity");
-  const hoverTier = document.querySelector("#xai-hover-tier");
-
-  function updateHoverDetail(item) {
-    if (!item) return;
-    if (hoverChar) hoverChar.textContent = item.char;
-    if (hoverToken) hoverToken.textContent = `PRIMARY N-GRAM: ${item.top_token ? "'" + item.top_token + "'" : "—"}`;
-    if (hoverImpact) {
-      const imp = item.token_impact !== undefined ? item.token_impact : item.risk_score;
-      hoverImpact.textContent = `${imp > 0 ? "+" : ""}${imp.toFixed(3)}`;
-      hoverImpact.style.color = imp > 0 ? "#f87171" : "#34d399";
-    }
-    if (hoverIntensity) {
-      hoverIntensity.textContent = `${Math.round(item.intensity * 100)}%`;
-    }
-    if (hoverTier) {
-      hoverTier.textContent = item.tier.toUpperCase();
-      hoverTier.className = `detail-val tier-${item.tier}`;
-      if (item.tier === "critical") hoverTier.style.color = "#ef4444";
-      else if (item.tier === "high") hoverTier.style.color = "#f59e0b";
-      else if (item.tier === "medium") hoverTier.style.color = "#fde047";
-      else hoverTier.style.color = "#34d399";
-    }
-  }
-
-  if (heatmapStream && Array.isArray(xai.char_heatmap)) {
-    heatmapStream.replaceChildren();
-
-    let maxCharItem = null;
-    let maxIntensity = -1;
-
-    xai.char_heatmap.forEach((item, idx) => {
-      const span = document.createElement("span");
-      span.className = `xai-char ${item.tier || "low"}`;
-      span.textContent = item.char;
-      span.setAttribute("data-index", idx);
-      span.title = `Char '${item.char}' | Pattern: ${item.top_token || "—"} | Impact: ${item.token_impact}`;
-
-      span.addEventListener("mouseenter", () => {
-        document.querySelectorAll(".xai-char.active").forEach((el) => el.classList.remove("active"));
-        span.classList.add("active");
-        updateHoverDetail(item);
-      });
-
-      span.addEventListener("click", () => {
-        document.querySelectorAll(".xai-char.active").forEach((el) => el.classList.remove("active"));
-        span.classList.add("active");
-        updateHoverDetail(item);
-      });
-
-      heatmapStream.appendChild(span);
-
-      if (item.intensity > maxIntensity) {
-        maxIntensity = item.intensity;
-        maxCharItem = item;
-      }
-    });
-
-    // Default focus to the highest risk character or first character
-    const defaultFocus = maxCharItem || xai.char_heatmap[0];
-    if (defaultFocus) {
-      updateHoverDetail(defaultFocus);
-      const firstEl = heatmapStream.querySelector(`[data-index="${defaultFocus.index}"]`);
-      if (firstEl) firstEl.classList.add("active");
-    }
-  }
-
-  // 3. Top Phishing Attribution Tokens (Threat Drivers)
-  const riskList = document.querySelector("#xai-risk-tokens-list");
-  if (riskList) {
-    riskList.replaceChildren();
-    const riskTokens = xai.top_risk_tokens || [];
-    if (riskTokens.length === 0) {
-      const emptyNote = document.createElement("p");
-      emptyNote.className = "token-empty-note";
-      emptyNote.textContent = "No significant adversarial sub-tokens detected.";
-      riskList.appendChild(emptyNote);
-    } else {
-      const maxRiskContrib = Math.max(...riskTokens.map((t) => Math.abs(t.contrib) || 0.001));
-      riskTokens.forEach((t) => {
-        const row = document.createElement("div");
-        row.className = "token-bar-row";
-
-        const name = document.createElement("span");
-        name.className = "token-name";
-        name.textContent = t.ngram;
-        name.title = `N-Gram '${t.ngram}' (Impact: +${t.contrib})`;
-
-        const track = document.createElement("div");
-        track.className = "token-track";
-        const fill = document.createElement("div");
-        fill.className = "token-fill risk";
-        const barWidth = Math.round(((Math.abs(t.contrib) || 0) / maxRiskContrib) * 100);
-        fill.style.width = `${Math.max(14, barWidth)}%`;
-        track.appendChild(fill);
-
-        const weight = document.createElement("span");
-        weight.className = "token-weight risk";
-        weight.textContent = `+${t.weight.toFixed(2)}`;
-
-        row.append(name, track, weight);
-        riskList.appendChild(row);
-      });
-    }
-  }
-
-  // 4. Top Benign Attribution Tokens (Trust Anchors)
-  const safeList = document.querySelector("#xai-safe-tokens-list");
-  if (safeList) {
-    safeList.replaceChildren();
-    const safeTokens = xai.top_safe_tokens || [];
-    if (safeTokens.length === 0) {
-      const emptyNote = document.createElement("p");
-      emptyNote.className = "token-empty-note";
-      emptyNote.textContent = "No benign structural anchors detected.";
-      safeList.appendChild(emptyNote);
-    } else {
-      const maxSafeContrib = Math.max(...safeTokens.map((t) => Math.abs(t.contrib) || 0.001));
-      safeTokens.forEach((t) => {
-        const row = document.createElement("div");
-        row.className = "token-bar-row";
-
-        const name = document.createElement("span");
-        name.className = "token-name";
-        name.textContent = t.ngram;
-        name.title = `N-Gram '${t.ngram}' (Impact: ${t.contrib})`;
-
-        const track = document.createElement("div");
-        track.className = "token-track";
-        const fill = document.createElement("div");
-        fill.className = "token-fill safe";
-        const barWidth = Math.round(((Math.abs(t.contrib) || 0) / maxSafeContrib) * 100);
-        fill.style.width = `${Math.max(14, barWidth)}%`;
-        track.appendChild(fill);
-
-        const weight = document.createElement("span");
-        weight.className = "token-weight safe";
-        weight.textContent = `${t.weight.toFixed(2)}`;
-
-        row.append(name, track, weight);
-        safeList.appendChild(row);
-      });
-    }
-  }
-
-  // 5. Mathematical Formula Terms
-  const termIntercept = document.querySelector("#xai-term-intercept");
-  const termRisk = document.querySelector("#xai-term-risk");
-  const termSafe = document.querySelector("#xai-term-safe");
-  const termLogit = document.querySelector("#xai-term-logit");
-  const termActivation = document.querySelector("#xai-term-activation");
-
-  if (termIntercept) termIntercept.textContent = `${xai.intercept > 0 ? "+" : ""}${xai.intercept.toFixed(2)}`;
-  if (termRisk) termRisk.textContent = `+${xai.net_risk_evidence.toFixed(2)}`;
-  if (termSafe) termSafe.textContent = `-${xai.net_safe_evidence.toFixed(2)}`;
-  if (termLogit) {
-    termLogit.textContent = `${xai.decision_logit > 0 ? "+" : ""}${xai.decision_logit.toFixed(2)}`;
-    termLogit.style.color = xai.decision_logit > 0 ? "#f87171" : "#34d399";
-  }
-  if (termActivation) {
-    termActivation.textContent = `${xai.ml_probability.toFixed(1)}%`;
-    termActivation.style.color = xai.ml_probability >= 50 ? "#f87171" : "#34d399";
-  }
-}
-
 // Error Handling
 function showError(msg) {
   errorBanner.textContent = `[ERROR] ${msg}`;
@@ -1123,10 +940,6 @@ copyReportBtn.addEventListener("click", () => {
     .map((f) => `- [${(f.severity || "INFO").toUpperCase()}] ${f.name}: ${f.detail}`)
     .join("\n");
 
-  const xaiSummary = d.xai && d.xai.status === "ready"
-    ? `\n## Explainable AI (XAI) Attribution\nLogit: ${d.xai.decision_logit > 0 ? "+" : ""}${d.xai.decision_logit} | P(Phish): ${d.xai.ml_probability}%\nTop Phishing Tokens: ${(d.xai.top_risk_tokens || []).map(t => `'${t.ngram}' (+${t.weight})`).join(', ') || 'None'}\nSynthesis: ${d.xai.narrative}\n`
-    : "";
-
   const reportText = [
     `# PHISH-ZERO FORENSIC AUDIT REPORT`,
     `Target: ${d.url}`,
@@ -1135,7 +948,6 @@ copyReportBtn.addEventListener("click", () => {
     `Phishing Score: ${d.phishing_score} / 100 (ML: ${d.ml_score}%, Heuristic: ${d.heuristic_score}%)`,
     `Authority: ${d.is_top_authority ? "VERIFIED TOP-TIER" : "STANDARD"}`,
     `Model: ${d.model_name}`,
-    xaiSummary,
     `## Forensic Signals (${(d.findings || []).length})`,
     findingsSummary,
   ].filter(Boolean).join("\n");
@@ -2108,6 +1920,7 @@ const EntropyVisualizer = (() => {
     const plotH = height - padY * 2;
     const maxH = 5.0; // Max bits for 6-char alphabet
 
+    const isLight = document.documentElement.getAttribute("data-theme") === "light";
     const ns = "http://www.w3.org/2000/svg";
 
     // Grid lines: 1, 2, 3, 4 bits
@@ -2118,14 +1931,14 @@ const EntropyVisualizer = (() => {
       line.setAttribute("y1", y);
       line.setAttribute("x2", width - padX);
       line.setAttribute("y2", y);
-      line.setAttribute("stroke", "rgba(255, 255, 255, 0.08)");
+      line.setAttribute("stroke", isLight ? "rgba(15, 23, 42, 0.08)" : "rgba(255, 255, 255, 0.08)");
       line.setAttribute("stroke-width", "1");
       svg.appendChild(line);
 
       const label = document.createElementNS(ns, "text");
       label.setAttribute("x", padX - 8);
       label.setAttribute("y", y + 3);
-      label.setAttribute("fill", "rgba(255, 255, 255, 0.35)");
+      label.setAttribute("fill", isLight ? "rgba(15, 23, 42, 0.55)" : "rgba(255, 255, 255, 0.35)");
       label.setAttribute("font-family", "JetBrains Mono, monospace");
       label.setAttribute("font-size", "8");
       label.setAttribute("text-anchor", "end");
@@ -2818,13 +2631,14 @@ const BatchAuditEngine = (() => {
     const total = summary.total || 0;
     if (donutNum) donutNum.textContent = total;
 
+    const isLight = document.documentElement.getAttribute("data-theme") === "light";
     if (total === 0) {
       const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
       circle.setAttribute("cx", "80");
       circle.setAttribute("cy", "80");
       circle.setAttribute("r", "56");
       circle.setAttribute("fill", "none");
-      circle.setAttribute("stroke", "rgba(255, 255, 255, 0.08)");
+      circle.setAttribute("stroke", isLight ? "rgba(15, 23, 42, 0.10)" : "rgba(255, 255, 255, 0.08)");
       circle.setAttribute("stroke-width", "18");
       donutSvg.appendChild(circle);
       return;
@@ -4764,6 +4578,9 @@ const ThemeManager = (() => {
     }
     if (typeof EntropyVisualizer !== "undefined" && currentReportData && currentReportData.url) {
       EntropyVisualizer.render(currentReportData.url);
+    }
+    if (currentReportData && currentReportData.graph_analysis) {
+      renderGraphAnalyzer(currentReportData.graph_analysis, currentReportData.threat_level);
     }
   }
 
